@@ -5,8 +5,8 @@ const Hero = () => {
   return (
     <section id="home" className="hero-pattern pt-32 pb-20 md:pb-32">
       <div className="container-custom">
-        <div className="lg:flex lg:items-center lg:justify-between">
-          <div className="lg:w-1/2 mb-10 lg:mb-0">
+        <div className="lg:flex lg:items-center lg:justify-between lg:gap-12">
+          <div className="lg:w-1/2 lg:pr-8 mb-10 lg:mb-0">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-800 mb-6 leading-tight">
               <span className="text-primary">Classical Education</span> for Modern Homeschool Families
             </h1>

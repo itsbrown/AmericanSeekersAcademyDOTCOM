@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, BookOpen, Users, Flag } from "lucide-react";
 
 const Philosophy = () => {
   return (
@@ -15,8 +15,8 @@ const Philosophy = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white p-8 rounded-lg shadow-md">
             <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 text-primary">
-                <i className="fas fa-book text-2xl"></i>
+              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
+                <BookOpen className="h-8 w-8" />
               </span>
             </div>
             <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">Classical Model</h3>
@@ -27,8 +27,8 @@ const Philosophy = () => {
           
           <div className="bg-white p-8 rounded-lg shadow-md">
             <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 text-primary">
-                <i className="fas fa-users text-2xl"></i>
+              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
+                <Users className="h-8 w-8" />
               </span>
             </div>
             <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">Parent-Driven</h3>
@@ -39,8 +39,8 @@ const Philosophy = () => {
           
           <div className="bg-white p-8 rounded-lg shadow-md">
             <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 text-primary">
-                <i className="fas fa-flag-usa text-2xl"></i>
+              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
+                <Flag className="h-8 w-8" />
               </span>
             </div>
             <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">American Values</h3>

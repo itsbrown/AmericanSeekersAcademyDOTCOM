@@ -32,7 +32,7 @@ export const programs: Program[] = [
       "Circle time stories and manners discussions",
       "Sensory bins and hands-on experiments"
     ],
-    ihipHours: "IHIP starts at 6 years",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1545558014-8692077e9b5c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A deep, personal connection with a mentor is a priceless gift for any child. At ASA, we believe the guidance of dedicated teachers is a cornerstone of traditional education that homeschooling families can embrace to enrich their child's growth. Our Macaroni Class (ages 6 months to 3 years) welcomes our youngest learners into a warm, nurturing academic setting designed to spark curiosity, encourage sensory exploration, and build foundational social skills. Beyond engaging lessons on numbers, letters, colors, and syllables, your child will delight in a vibrant morning filled with play, music, movement, obstacle courses, tumbling, classic stories, and enriching arts and crafts—all in just three hours, three days a week. With a consistent, rhythmic schedule, your little one will thrive in a thoughtfully crafted routine at ASA, brimming with exceptional educational activities and high-quality creative projects. Our co-op is purposefully designed for homeschooling families, striking a perfect balance between learning and living, and instilling a lifelong passion for discovery."
   },
@@ -56,7 +56,7 @@ export const programs: Program[] = [
       "Discussion-based circle time on manners and history",
       "Hands-on experiments like cloud in a jar"
     ],
-    ihipHours: "900 hours/year",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Yankee Doodle class (ages 4–5, PreK–K) builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning and civic virtue. The program supports homeschooling families by providing a structured yet flexible curriculum. Using Literacy Essentials, Primary Phonics, Dimensions Math, and resources like Tuttle Twins and Our America (Abeka), students master short vowel sounds, decode CVC words, count to 10, perform basic addition, and understand American symbols and figures."
   },
@@ -80,7 +80,7 @@ export const programs: Program[] = [
       "Science experiments and activity books",
       "Art projects including Portrait Series sketches"
     ],
-    ihipHours: "900 hours/year",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1629196911514-cfd65aa4a048?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Tycoons class (grades 1–2) dives into Literacy Essentials building a strong foundation necessary for developing reading and writing skills. Throughout a 3 hour period, 3 days a week, students receive in person instruction using structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery."
   },
@@ -104,7 +104,7 @@ export const programs: Program[] = [
       "Project-based learning (store dioramas, continent maps)",
       "Structured writing with IEW techniques"
     ],
-    ihipHours: "900 hours/year",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1525373698358-041e3a460346?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Seekers class (grades 3–5) goes deeper into liberal arts, sharpening their reading and writing skills while pushing them intellectually throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery."
   },
@@ -128,7 +128,7 @@ export const programs: Program[] = [
       "Hands-on science experiments and robot design",
       "Collaborative storytelling and memorization"
     ],
-    ihipHours: "990 hours/year",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Pioneers class (grades 6–8) challenges students intellectually and philosophically throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery."
   },
@@ -152,7 +152,7 @@ export const programs: Program[] = [
       "Hands-on penny science experiments and robot design",
       "Speech writing and Gettysburg Address recitation"
     ],
-    ihipHours: "990 hours/year",
+    ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Patriots class (grades 9–12) prepares students for intellectual and civic leadership throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery."
   }
