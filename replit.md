@@ -1,0 +1,85 @@
+# American Seekers Academy
+
+## Overview
+
+American Seekers Academy is a full-stack web application for a classical education homeschool co-op. The platform showcases educational programs for children of various ages, allows parents to explore curriculum details, subscribe to newsletters, and suggest new locations for the academy. The site emphasizes a classical education model with American values and civic virtue.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter (lightweight React router)
+- **State Management**: TanStack React Query for server state
+- **Styling**: Tailwind CSS with shadcn/ui component library
+- **Build Tool**: Vite with React plugin
+- **Form Handling**: React Hook Form with Zod validation
+
+The frontend follows a component-based architecture with:
+- Pages in `client/src/pages/` for route components
+- Reusable components in `client/src/components/` organized by feature (home, layout, common, ui)
+- Shared utilities in `client/src/lib/`
+- Custom hooks in `client/src/hooks/`
+
+Path aliases configured:
+- `@/*` maps to `client/src/*`
+- `@shared/*` maps to `shared/*`
+
+### Backend Architecture
+
+- **Runtime**: Node.js with Express
+- **Language**: TypeScript with ESM modules
+- **API Pattern**: RESTful JSON API with `/api` prefix
+- **Development**: Vite dev server integration for HMR
+
+The server provides:
+- Static file serving in production
+- API routes for location suggestions and newsletter subscriptions
+- Request logging middleware for API endpoints
+- Error handling middleware
+
+### Data Storage
+
+- **ORM**: Drizzle ORM
+- **Database**: PostgreSQL (via Neon serverless driver)
+- **Schema Location**: `shared/schema.ts`
+- **Migrations**: Generated to `./migrations` directory
+
+Current schema includes:
+- `users` - Basic user authentication (id, username, password)
+- `locationSuggestions` - User-submitted location requests (name, email, location, comments)
+- `newsletters` - Email subscriptions (email, createdAt)
+
+The storage layer uses an interface pattern (`IStorage`) with a `MemStorage` implementation for development, allowing easy swap to database storage.
+
+### Validation
+
+- **Library**: Zod with drizzle-zod integration
+- **Pattern**: Schema-first validation using `createInsertSchema` from Drizzle schemas
+- **Error Formatting**: zod-validation-error for user-friendly messages
+
+## External Dependencies
+
+### Database
+- **PostgreSQL**: Primary database via `@neondatabase/serverless`
+- **Connection**: Requires `DATABASE_URL` environment variable
+
+### UI Component Library
+- **shadcn/ui**: Comprehensive component library built on Radix UI primitives
+- **Configuration**: `components.json` defines paths and styling preferences (new-york style, neutral base color)
+
+### Third-Party Services
+- **Font Awesome**: Icon library (via `@fortawesome/fontawesome-free`)
+- **Google Fonts**: Montserrat and Merriweather fonts
+
+### Key NPM Packages
+- `drizzle-kit`: Database migrations and schema management
+- `express-session` with `connect-pg-simple`: Session management
+- `embla-carousel-react`: Carousel component
+- `react-day-picker`: Date picker component
+- `vaul`: Drawer component
+- `recharts`: Charting library
