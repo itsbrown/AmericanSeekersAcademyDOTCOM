@@ -2,56 +2,66 @@ import { Link } from "wouter";
 import { ChevronRight, BookOpen, Users, Flag } from "lucide-react";
 
 const Philosophy = () => {
+  const cards = [
+    {
+      icon: BookOpen,
+      title: "Classical Model",
+      description: "The Trivium and Quadrivium provide a basis for core subjects taught throughout the week, creating a well-rounded educational foundation.",
+      testId: "philosophy-classical"
+    },
+    {
+      icon: Users,
+      title: "Parent-Driven",
+      description: "Created by homeschool parents for homeschool parents who want more for their children's education while maintaining educational freedom.",
+      testId: "philosophy-parent"
+    },
+    {
+      icon: Flag,
+      title: "American Values",
+      description: "Our curriculum emphasizes civic virtue, responsible citizenship, and a deep understanding of American history and values.",
+      testId: "philosophy-values"
+    }
+  ];
+
   return (
-    <section className="py-16 bg-neutral-50">
+    <section className="py-20 bg-muted/50" aria-labelledby="philosophy-heading">
       <div className="container-custom">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">Our Educational Philosophy</h2>
-          <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
+        <div className="text-center mb-14">
+          <h2 id="philosophy-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Our Educational Philosophy
+          </h2>
+          <div className="section-divider mb-6"></div>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             American Seekers Academy uses inspiration from the Classical model of education, offering a time-tested and complete schooling experience that complements your homeschooling journey.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-lg shadow-md">
-            <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
-                <BookOpen className="h-8 w-8" />
-              </span>
+          {cards.map((card, index) => (
+            <div 
+              key={index}
+              className="card-elegant p-8 text-center group"
+              data-testid={card.testId}
+            >
+              <div className="mb-6">
+                <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                  <card.icon className="h-8 w-8" aria-hidden="true" />
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-4">{card.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {card.description}
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">Classical Model</h3>
-            <p className="text-neutral-600">
-              The Trivium and Quadrivium provide a basis for core subjects taught throughout the week, creating a well-rounded educational foundation.
-            </p>
-          </div>
-          
-          <div className="bg-white p-8 rounded-lg shadow-md">
-            <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
-                <Users className="h-8 w-8" />
-              </span>
-            </div>
-            <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">Parent-Driven</h3>
-            <p className="text-neutral-600">
-              Created by homeschool parents for homeschool parents who want more for their children's education while maintaining educational freedom.
-            </p>
-          </div>
-          
-          <div className="bg-white p-8 rounded-lg shadow-md">
-            <div className="text-center mb-4">
-              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 text-primary">
-                <Flag className="h-8 w-8" />
-              </span>
-            </div>
-            <h3 className="text-xl font-semibold text-neutral-800 mb-3 text-center">American Values</h3>
-            <p className="text-neutral-600">
-              Our curriculum emphasizes civic virtue, responsible citizenship, and a deep understanding of American history and values.
-            </p>
-          </div>
+          ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <Link href="#about" className="inline-flex items-center text-primary hover:text-primary/90 font-medium">
+        <div className="mt-14 text-center">
+          <Link 
+            href="#about" 
+            className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors duration-200"
+            data-testid="philosophy-learn-more"
+          >
             Learn more about our approach
             <ChevronRight className="ml-1 h-4 w-4" />
           </Link>

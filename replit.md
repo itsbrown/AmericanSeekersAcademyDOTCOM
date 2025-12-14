@@ -6,12 +6,25 @@ American Seekers Academy is a full-stack web application for a classical educati
 
 ## Brand Guidelines
 
-### Color Palette
-- **Main Blue**: #336694 (primary brand color)
-- **Accent Light Blue**: #b4cfe8 (backgrounds, highlights)
-- **Main Red**: #d01515 (secondary accent)
-- **Green (Action Items)**: #179458 (buttons, CTAs)
-- **Text**: #000000 (black)
+### Color Palette (Patriotic Family Theme)
+- **Navy Primary**: #1e3a5f / hsl(212, 52%, 25%) - Primary brand color
+- **Warm Cream**: hsl(40, 33%, 98%) - Background color
+- **Vibrant Red**: hsl(352, 80%, 45%) - Secondary accent
+- **Gold Accent**: hsl(38, 75%, 45%) - Accent highlights
+- **Text**: hsl(210, 50%, 15%) - Dark navy text
+
+### Typography
+- **Headings**: Playfair Display (elegant serif, weights 400-800)
+- **Body Text**: Inter (clean sans-serif, weights 300-700)
+- Fonts loaded via Google Fonts in `client/src/index.css`
+
+### Design System Classes (client/src/index.css)
+- `.btn-primary` - Navy gradient button with white text
+- `.btn-secondary` - Outlined navy button
+- `.btn-accent` - Gold gradient button
+- `.card-elegant` - Cards with subtle borders and hover effects
+- `.section-divider` - Navy to gold gradient divider
+- `.navy-gradient` - Navy gradient for CTA backgrounds
 
 ### Brand Voice & Mission
 **Mission Statement**: We are aiming to provide homeschool families access to a private, in-person classical education that guarantees parents' right to choose what is best for their child. Our drop off program helps make homeschooling a success for the whole family and cultivates civic virtue while preparing students for a life of freedom and intellectual growth.
@@ -110,7 +123,8 @@ The storage layer uses an interface pattern (`IStorage`) with a `MemStorage` imp
 
 ### Third-Party Services
 - **Font Awesome**: Icon library (via `@fortawesome/fontawesome-free`)
-- **Google Fonts**: Montserrat and Merriweather fonts
+- **Google Fonts**: Playfair Display and Inter fonts
+- **Lucide React**: Icon library for UI icons
 
 ### Key NPM Packages
 - `drizzle-kit`: Database migrations and schema management

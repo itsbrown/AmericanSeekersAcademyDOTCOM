@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { faqs } from '@/lib/constants';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -10,11 +10,15 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-16 bg-white">
+    <section id="faq" className="py-20 bg-card" aria-labelledby="faq-heading">
       <div className="container-custom">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-4">Frequently Asked Questions</h2>
-          <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-6">
+            <HelpCircle className="h-8 w-8 text-primary" aria-hidden="true" />
+          </div>
+          <h2 id="faq-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h2>
+          <div className="section-divider mb-6"></div>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Find answers to common questions about our program, curriculum, and approach.
           </p>
         </div>
@@ -22,23 +26,33 @@ const FAQ = () => {
         <div className="max-w-4xl mx-auto">
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="border border-neutral-200 rounded-lg shadow-sm">
+              <div 
+                key={index} 
+                className="card-elegant overflow-hidden"
+                data-testid={`faq-item-${index}`}
+              >
                 <button 
-                  className="w-full flex justify-between items-center p-5 text-left focus:outline-none"
+                  className="w-full flex justify-between items-center p-6 text-left hover:bg-muted/30 transition-colors duration-200"
                   onClick={() => toggleFaq(index)}
                   aria-expanded={openIndex === index}
+                  aria-controls={`faq-answer-${index}`}
+                  data-testid={`faq-button-${index}`}
                 >
-                  <span className="font-semibold text-neutral-800">{faq.question}</span>
-                  {openIndex === index ? (
-                    <ChevronUp className="h-5 w-5 text-neutral-500" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-neutral-500" />
-                  )}
+                  <span className="font-semibold text-foreground pr-4">{faq.question}</span>
+                  <ChevronDown 
+                    className={`h-5 w-5 text-primary flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} 
+                    aria-hidden="true"
+                  />
                 </button>
-                <div className={`px-5 pb-5 ${openIndex === index ? 'block' : 'hidden'}`}>
-                  <p className="text-neutral-600">
-                    {faq.answer}
-                  </p>
+                <div 
+                  id={`faq-answer-${index}`}
+                  className={`overflow-hidden transition-all duration-300 ${openIndex === index ? 'max-h-96' : 'max-h-0'}`}
+                >
+                  <div className="px-6 pb-6 pt-0">
+                    <p className="text-muted-foreground leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}

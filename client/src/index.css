@@ -1,76 +1,81 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Merriweather:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
+  --background: 40 33% 98%;
+  --foreground: 210 50% 15%;
   
-  --muted: 209 51% 95%;
-  --muted-foreground: 208 30% 30%;
+  --muted: 40 20% 94%;
+  --muted-foreground: 210 30% 35%;
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
+  --popover: 40 33% 99%;
+  --popover-foreground: 210 50% 15%;
   
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
+  --card: 40 33% 99%;
+  --card-foreground: 210 50% 15%;
   
-  --border: 209 30% 85%;
-  --input: 209 30% 85%;
+  --border: 40 20% 85%;
+  --input: 40 20% 85%;
   
-  --primary: 208 49% 39%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 212 52% 25%;
+  --primary-foreground: 40 33% 98%;
   
-  --primary-light: 209 51% 81%;
-  --primary-light-foreground: 208 49% 25%;
+  --primary-light: 212 40% 92%;
+  --primary-light-foreground: 212 52% 20%;
   
-  --secondary: 0 82% 45%;
+  --secondary: 352 80% 45%;
   --secondary-foreground: 0 0% 100%;
   
-  --accent: 151 73% 34%;
+  --accent: 38 75% 45%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 82% 45%;
+  --destructive: 352 80% 45%;
   --destructive-foreground: 0 0% 100%;
   
-  --ring: 208 49% 39%;
-  --radius: 0.5rem;
+  --ring: 212 52% 25%;
+  --radius: 0.375rem;
+  
+  --gold: 38 75% 45%;
+  --cream: 40 33% 96%;
+  --navy: 212 52% 25%;
+  --red: 352 80% 45%;
 }
 
 .dark {
-  --background: 208 30% 10%;
-  --foreground: 0 0% 98%;
+  --background: 212 40% 8%;
+  --foreground: 40 20% 95%;
   
-  --muted: 208 20% 20%;
-  --muted-foreground: 209 30% 70%;
+  --muted: 212 30% 15%;
+  --muted-foreground: 40 15% 70%;
   
-  --popover: 208 30% 10%;
-  --popover-foreground: 0 0% 98%;
+  --popover: 212 40% 8%;
+  --popover-foreground: 40 20% 95%;
   
-  --card: 208 30% 12%;
-  --card-foreground: 0 0% 98%;
+  --card: 212 35% 12%;
+  --card-foreground: 40 20% 95%;
   
-  --border: 208 20% 25%;
-  --input: 208 20% 25%;
+  --border: 212 25% 20%;
+  --input: 212 25% 20%;
   
-  --primary: 208 49% 39%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 212 52% 45%;
+  --primary-foreground: 40 33% 98%;
   
-  --primary-light: 209 51% 81%;
-  --primary-light-foreground: 208 49% 25%;
+  --primary-light: 212 40% 25%;
+  --primary-light-foreground: 40 20% 90%;
   
-  --secondary: 0 82% 45%;
+  --secondary: 352 70% 55%;
   --secondary-foreground: 0 0% 100%;
   
-  --accent: 151 73% 34%;
+  --accent: 38 70% 55%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 82% 45%;
+  --destructive: 352 70% 55%;
   --destructive-foreground: 0 0% 100%;
   
-  --ring: 208 49% 39%;
+  --ring: 212 52% 45%;
 }
 
 @layer base {
@@ -83,11 +88,15 @@
   }
   
   body {
-    @apply bg-background text-foreground font-merriweather;
+    @apply bg-background text-foreground font-inter;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-montserrat font-bold;
+    @apply font-playfair font-bold tracking-tight;
+  }
+  
+  a:focus-visible, button:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
   }
 }
 
@@ -97,23 +106,78 @@
   }
   
   .program-card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300;
+    @apply bg-card rounded-lg shadow-md overflow-hidden transition-all duration-300 border border-border/50;
   }
   
   .program-card:hover {
-    @apply -translate-y-1 shadow-lg;
+    @apply -translate-y-1 shadow-xl border-primary/20;
   }
   
   .hero-pattern {
-    background-color: #ffffff;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f3f4f6' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background: linear-gradient(135deg, hsl(40, 33%, 98%) 0%, hsl(40, 33%, 94%) 100%);
+  }
+  
+  .section-divider {
+    @apply w-20 h-1 mx-auto rounded-full;
+    background: linear-gradient(90deg, hsl(212, 52%, 25%) 0%, hsl(38, 75%, 45%) 100%);
+  }
+  
+  .gold-accent {
+    color: hsl(38, 75%, 45%);
+  }
+  
+  .navy-gradient {
+    background: linear-gradient(135deg, hsl(212, 52%, 25%) 0%, hsl(212, 52%, 35%) 100%);
+  }
+  
+  .cream-bg {
+    background-color: hsl(40, 33%, 96%);
+  }
+  
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium rounded-md text-white transition-all duration-300;
+    background: linear-gradient(135deg, hsl(212, 52%, 25%) 0%, hsl(212, 52%, 35%) 100%);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, hsl(212, 52%, 30%) 0%, hsl(212, 52%, 40%) 100%);
+    @apply shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium rounded-md transition-all duration-300 border-2;
+    border-color: hsl(212, 52%, 25%);
+    color: hsl(212, 52%, 25%);
+  }
+  
+  .btn-secondary:hover {
+    background: hsl(212, 52%, 25%);
+    @apply text-white shadow-lg;
+  }
+  
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium rounded-md text-white transition-all duration-300;
+    background: linear-gradient(135deg, hsl(38, 75%, 45%) 0%, hsl(38, 75%, 55%) 100%);
+  }
+  
+  .btn-accent:hover {
+    background: linear-gradient(135deg, hsl(38, 75%, 50%) 0%, hsl(38, 75%, 60%) 100%);
+    @apply shadow-lg;
+  }
+  
+  .card-elegant {
+    @apply bg-card rounded-lg border border-border/50 shadow-sm transition-all duration-300;
+  }
+  
+  .card-elegant:hover {
+    @apply shadow-lg border-primary/30;
   }
 }
 
-.font-montserrat {
-  font-family: 'Montserrat', sans-serif;
+.font-playfair {
+  font-family: 'Playfair Display', serif;
 }
 
-.font-merriweather {
-  font-family: 'Merriweather', serif;
+.font-inter {
+  font-family: 'Inter', sans-serif;
 }

@@ -1,35 +1,58 @@
 import { Link } from "wouter";
 import { programs } from "@/lib/constants";
+import { MapPin, Phone, Mail, Facebook, Instagram, Youtube } from "lucide-react";
+import logoImage from "@assets/image_1765749931677.png";
 
 const Footer = () => {
   return (
-    <footer id="contact" className="bg-neutral-800 text-white pt-16 pb-8">
+    <footer id="contact" className="bg-foreground text-white pt-16 pb-8" role="contentinfo">
       <div className="container-custom">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">American Seekers Academy</h3>
-            <p className="text-neutral-300 mb-4">
+            <Link href="/" className="inline-block mb-4" aria-label="American Seekers Academy Home">
+              <img src={logoImage} alt="American Seekers Academy" className="h-12 w-auto brightness-0 invert" />
+            </Link>
+            <p className="text-white/70 mb-6 leading-relaxed">
               A drop-off homeschool co-op created by homeschool parents for all parents who want more.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-neutral-300 hover:text-white">
-                <i className="fab fa-facebook-f text-xl"></i>
+              <a 
+                href="#" 
+                className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
+                aria-label="Facebook"
+                data-testid="footer-facebook"
+              >
+                <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-neutral-300 hover:text-white">
-                <i className="fab fa-instagram text-xl"></i>
+              <a 
+                href="#" 
+                className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
+                aria-label="Instagram"
+                data-testid="footer-instagram"
+              >
+                <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-neutral-300 hover:text-white">
-                <i className="fab fa-youtube text-xl"></i>
+              <a 
+                href="#" 
+                className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
+                aria-label="YouTube"
+                data-testid="footer-youtube"
+              >
+                <Youtube className="h-5 w-5" />
               </a>
             </div>
           </div>
           
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Programs</h3>
-            <ul className="space-y-2">
+            <h3 className="text-lg font-bold text-white mb-6">Programs</h3>
+            <ul className="space-y-3" role="list">
               {programs.map(program => (
                 <li key={program.slug}>
-                  <Link href={`/programs/${program.slug}`} className="text-neutral-300 hover:text-white">
+                  <Link 
+                    href={`/programs/${program.slug}`} 
+                    className="text-white/70 hover:text-accent transition-colors duration-200"
+                    data-testid={`footer-program-${program.slug}`}
+                  >
                     {program.name} ({program.ageRange})
                   </Link>
                 </li>
@@ -38,40 +61,44 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li><Link href="/#home" className="text-neutral-300 hover:text-white">Home</Link></li>
-              <li><Link href="/#about" className="text-neutral-300 hover:text-white">About Us</Link></li>
-              <li><Link href="/#curriculum" className="text-neutral-300 hover:text-white">Curriculum</Link></li>
-              <li><Link href="/#locations" className="text-neutral-300 hover:text-white">Locations</Link></li>
-              <li><Link href="/#faq" className="text-neutral-300 hover:text-white">FAQ</Link></li>
-              <li><a href="#" className="text-neutral-300 hover:text-white">Become a Mentor</a></li>
+            <h3 className="text-lg font-bold text-white mb-6">Quick Links</h3>
+            <ul className="space-y-3" role="list">
+              <li><Link href="/#home" className="text-white/70 hover:text-accent transition-colors duration-200">Home</Link></li>
+              <li><Link href="/#about" className="text-white/70 hover:text-accent transition-colors duration-200">About Us</Link></li>
+              <li><Link href="/#curriculum" className="text-white/70 hover:text-accent transition-colors duration-200">Curriculum</Link></li>
+              <li><Link href="/#locations" className="text-white/70 hover:text-accent transition-colors duration-200">Locations</Link></li>
+              <li><Link href="/#faq" className="text-white/70 hover:text-accent transition-colors duration-200">FAQ</Link></li>
+              <li><a href="#" className="text-white/70 hover:text-accent transition-colors duration-200">Become a Mentor</a></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Contact Us</h3>
-            <ul className="space-y-4">
+            <h3 className="text-lg font-bold text-white mb-6">Contact Us</h3>
+            <ul className="space-y-4" role="list">
               <li className="flex items-start">
-                <i className="fas fa-map-marker-alt mt-1 mr-3 text-neutral-400"></i>
-                <span className="text-neutral-300">
+                <MapPin className="h-5 w-5 mt-0.5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
+                <address className="text-white/70 not-italic">
                   123 Education Way<br />
                   Brighton, NY 14610
-                </span>
+                </address>
               </li>
               <li className="flex items-center">
-                <i className="fas fa-phone-alt mr-3 text-neutral-400"></i>
-                <span className="text-neutral-300">(585) 555-1234</span>
+                <Phone className="h-5 w-5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
+                <a href="tel:+15855551234" className="text-white/70 hover:text-accent transition-colors duration-200">
+                  (585) 555-1234
+                </a>
               </li>
               <li className="flex items-center">
-                <i className="fas fa-envelope mr-3 text-neutral-400"></i>
-                <span className="text-neutral-300">info@americanseekersacademy.com</span>
+                <Mail className="h-5 w-5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
+                <a href="mailto:info@americanseekersacademy.com" className="text-white/70 hover:text-accent transition-colors duration-200">
+                  info@americanseekersacademy.com
+                </a>
               </li>
             </ul>
           </div>
         </div>
         
-        <div className="border-t border-neutral-700 mt-12 pt-8 text-center text-neutral-400 text-sm">
+        <div className="border-t border-white/10 mt-12 pt-8 text-center text-white/50 text-sm">
           <p>© {new Date().getFullYear()} American Seekers Academy. All rights reserved.</p>
         </div>
       </div>

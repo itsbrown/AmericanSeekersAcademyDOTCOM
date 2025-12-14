@@ -5,12 +5,19 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        playfair: ["Playfair Display", "serif"],
+        inter: ["Inter", "sans-serif"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
+        gold: "hsl(var(--gold))",
+        cream: "hsl(var(--cream))",
+        navy: "hsl(var(--navy))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
