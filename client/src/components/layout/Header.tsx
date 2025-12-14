@@ -44,58 +44,72 @@ const Header = () => {
     }
   };
 
-  const navLinkClass = "text-foreground/80 hover:text-primary px-3 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors duration-200";
-  const navLinkMobileClass = "text-foreground/80 hover:text-primary hover:bg-primary/5 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200";
+  const navLinks = [
+    { href: "#home", label: "Home", testId: "nav-home" },
+    { href: "#programs", label: "Programs", testId: "nav-programs" },
+    { href: "#curriculum", label: "Curriculum", testId: "nav-curriculum" },
+    { href: "#about", label: "About", testId: "nav-about" },
+    { href: "#locations", label: "Locations", testId: "nav-locations" },
+    { href: "#faq", label: "FAQ", testId: "nav-faq" },
+  ];
 
   return (
     <header 
-      className={`bg-card/95 backdrop-blur-md ${isScrolled ? 'shadow-lg border-b border-border/50' : 'border-b border-transparent'} fixed w-full z-50 transition-all duration-300`}
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-[#1e3a5f] shadow-lg' 
+          : 'bg-[#1e3a5f]'
+      }`}
       role="banner"
     >
-      <div className="container-custom">
-        <div className="flex justify-between h-20">
-          <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center" aria-label="American Seekers Academy Home">
-              <img src={logoImage} alt="American Seekers Academy" className="h-14 w-auto" />
+      {/* Main Header Bar - White House Style */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          {/* Logo - Left Side */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center" aria-label="American Seekers Academy Home">
+              <img 
+                src={logoImage} 
+                alt="American Seekers Academy" 
+                className="h-10 md:h-12 w-auto brightness-0 invert" 
+              />
             </Link>
           </div>
           
-          <nav className="hidden md:flex items-center" role="navigation" aria-label="Main navigation">
-            <div className="flex items-center space-x-1">
-              <a href="#home" onClick={(e) => scrollToSection(e, "#home")} className={navLinkClass} data-testid="nav-home">
-                Home
-              </a>
-              <a href="#programs" onClick={(e) => scrollToSection(e, "#programs")} className={navLinkClass} data-testid="nav-programs">
-                Programs
-              </a>
-              <a href="#curriculum" onClick={(e) => scrollToSection(e, "#curriculum")} className={navLinkClass} data-testid="nav-curriculum">
-                Curriculum
-              </a>
-              <a href="#about" onClick={(e) => scrollToSection(e, "#about")} className={navLinkClass} data-testid="nav-about">
-                About Us
-              </a>
-              <a href="#locations" onClick={(e) => scrollToSection(e, "#locations")} className={navLinkClass} data-testid="nav-locations">
-                Locations
-              </a>
-              <a href="#faq" onClick={(e) => scrollToSection(e, "#faq")} className={navLinkClass} data-testid="nav-faq">
-                FAQ
-              </a>
-              <a 
-                href="#contact" 
-                onClick={(e) => scrollToSection(e, "#contact")} 
-                className="ml-4 btn-accent text-sm py-2 px-5 cursor-pointer" 
-                data-testid="nav-contact"
-              >
-                Contact Us
-              </a>
-            </div>
+          {/* Desktop Navigation - Right Side */}
+          <nav className="hidden lg:flex items-center" role="navigation" aria-label="Main navigation">
+            <ul className="flex items-center space-x-1">
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  <a 
+                    href={link.href} 
+                    onClick={(e) => scrollToSection(e, link.href)} 
+                    className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                    data-testid={link.testId}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a 
+                  href="#contact" 
+                  onClick={(e) => scrollToSection(e, "#contact")} 
+                  className="ml-4 bg-white text-[#1e3a5f] hover:bg-gray-100 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                  data-testid="nav-contact"
+                >
+                  Contact
+                </a>
+              </li>
+            </ul>
           </nav>
           
-          <div className="flex md:hidden items-center">
+          {/* Mobile Menu Button */}
+          <div className="flex lg:hidden items-center">
             <button 
               type="button" 
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-foreground/80 hover:text-primary hover:bg-primary/5 transition-colors duration-200"
+              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-white/80 hover:bg-white/10 transition-colors duration-200"
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -112,38 +126,32 @@ const Header = () => {
         </div>
       </div>
       
+      {/* Mobile Menu */}
       <div 
         id="mobile-menu"
-        className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'}`}
+        className={`lg:hidden ${isMenuOpen ? 'block' : 'hidden'}`}
         role="navigation"
         aria-label="Mobile navigation"
       >
-        <div className="px-4 pt-2 pb-4 space-y-1 bg-card border-t border-border/50 shadow-xl">
-          <a href="#home" onClick={(e) => scrollToSection(e, "#home")} className={navLinkMobileClass}>
-            Home
-          </a>
-          <a href="#programs" onClick={(e) => scrollToSection(e, "#programs")} className={navLinkMobileClass}>
-            Programs
-          </a>
-          <a href="#curriculum" onClick={(e) => scrollToSection(e, "#curriculum")} className={navLinkMobileClass}>
-            Curriculum
-          </a>
-          <a href="#about" onClick={(e) => scrollToSection(e, "#about")} className={navLinkMobileClass}>
-            About Us
-          </a>
-          <a href="#locations" onClick={(e) => scrollToSection(e, "#locations")} className={navLinkMobileClass}>
-            Locations
-          </a>
-          <a href="#faq" onClick={(e) => scrollToSection(e, "#faq")} className={navLinkMobileClass}>
-            FAQ
-          </a>
+        <div className="px-4 pt-2 pb-4 space-y-1 bg-[#1e3a5f] border-t border-white/10">
+          {navLinks.map((link) => (
+            <a 
+              key={link.href}
+              href={link.href} 
+              onClick={(e) => scrollToSection(e, link.href)} 
+              className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200"
+              data-testid={`mobile-${link.testId}`}
+            >
+              {link.label}
+            </a>
+          ))}
           <a 
             href="#contact" 
             onClick={(e) => scrollToSection(e, "#contact")} 
-            className="mt-3 block w-full btn-accent text-center py-3 cursor-pointer"
+            className="mt-3 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+            data-testid="mobile-nav-contact"
           >
-            Contact Us
-          </a>
+            Contact</a>
         </div>
       </div>
     </header>

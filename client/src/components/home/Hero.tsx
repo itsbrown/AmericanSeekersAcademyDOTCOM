@@ -1,76 +1,91 @@
-import { Link } from "wouter";
-import { ArrowRight, BookOpen, Star, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Users } from "lucide-react";
+import flagCeremonyImage from "@assets/PXL_20250912_125751573_1765752840343.jpg";
 
 const Hero = () => {
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId.replace("#", ""));
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <section id="home" className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden">
-      <div className="absolute inset-0 hero-pattern"></div>
-      <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent"></div>
+    <section id="home" className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Full-width Background Image - Hillsdale Style */}
+      <div className="absolute inset-0">
+        <img 
+          src={flagCeremonyImage}
+          alt="Students gathered for flag ceremony at American Seekers Academy" 
+          className="w-full h-full object-cover"
+          loading="eager"
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a5f]/90 via-[#1e3a5f]/70 to-[#1e3a5f]/40"></div>
+      </div>
       
-      <div className="container-custom relative z-10">
-        <div className="lg:flex lg:items-center lg:justify-between lg:gap-16">
-          <div className="lg:w-1/2 mb-12 lg:mb-0">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6" data-testid="hero-badge">
-              <Star className="h-4 w-4 fill-current" />
-              Classical Education Excellence
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Discover the Joy of{" "}
-              <span className="text-primary">Classical Learning</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl mb-8 text-muted-foreground leading-relaxed">
-              American Seekers Academy empowers homeschool families with in-person classical education. We cultivate civic virtue, academic excellence, and lifelong friendships.
+      {/* Content Overlay */}
+      <div className="relative z-10 w-full pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-2xl">
+            {/* Tagline */}
+            <p className="text-white/90 text-lg md:text-xl font-medium mb-4 tracking-wide" data-testid="hero-tagline">
+              Making homeschooling a success for the whole family
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <Link 
+            {/* Main Heading */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              Classical Education.{" "}
+              <span className="text-[hsl(38,75%,55%)]">American Values.</span>
+            </h1>
+            
+            {/* Description */}
+            <p className="text-lg md:text-xl mb-8 text-white/90 leading-relaxed max-w-xl">
+              We cultivate civic virtue, academic excellence, and lifelong friendships through in-person classical education for homeschool families.
+            </p>
+            
+            {/* Stats Row */}
+            <div className="flex flex-wrap gap-6 text-sm text-white/80 mb-10">
+              <div className="flex items-center gap-2" data-testid="hero-stat-ages">
+                <Users className="h-5 w-5 text-[hsl(38,75%,55%)]" />
+                <span>Ages 6 months - 12th Grade</span>
+              </div>
+              <div className="flex items-center gap-2" data-testid="hero-stat-education">
+                <BookOpen className="h-5 w-5 text-[hsl(38,75%,55%)]" />
+                <span>Classical Curriculum</span>
+              </div>
+            </div>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <a 
                 href="#programs" 
-                className="btn-primary text-base"
+                onClick={(e) => scrollToSection(e, "#programs")}
+                className="inline-flex items-center justify-center bg-white text-[#1e3a5f] hover:bg-gray-100 px-8 py-4 text-base font-semibold rounded shadow-lg transition-all duration-300 cursor-pointer"
                 data-testid="hero-explore-btn"
               >
                 Explore Programs
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-              <Link 
+              </a>
+              <a 
                 href="#contact" 
-                className="btn-secondary text-base"
+                onClick={(e) => scrollToSection(e, "#contact")}
+                className="inline-flex items-center justify-center border-2 border-white text-white hover:bg-white hover:text-[#1e3a5f] px-8 py-4 text-base font-semibold rounded transition-all duration-300 cursor-pointer"
                 data-testid="hero-contact-btn"
               >
                 Get in Touch
-              </Link>
-            </div>
-            
-            <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2" data-testid="hero-stat-ages">
-                <Users className="h-5 w-5 text-primary" />
-                <span>Ages 6 months - 12th Grade</span>
-              </div>
-              <div className="flex items-center gap-2" data-testid="hero-stat-education">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span>Classical Curriculum</span>
-              </div>
+              </a>
             </div>
           </div>
-          
-          <div className="lg:w-1/2">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/10 rounded-2xl blur-2xl"></div>
-              <div className="relative rounded-xl overflow-hidden shadow-2xl border-4 border-white/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80" 
-                  alt="Students engaged in classical education with books and collaborative learning" 
-                  className="w-full h-auto object-cover" 
-                  style={{ maxHeight: '480px' }}
-                  loading="eager"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 bg-card rounded-lg shadow-xl p-4 border border-border/50" data-testid="hero-tagline-card">
-                <p className="text-sm font-medium text-primary italic">"Learn Best. Make Friends. Live Well."</p>
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
+      
+      {/* Bottom Quote Bar */}
+      <div className="absolute bottom-0 left-0 right-0 bg-[#1e3a5f]/95 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-white/90 text-sm md:text-base font-medium italic" data-testid="hero-quote">
+            "Learn Best. Make Friends. Live Well."
+          </p>
         </div>
       </div>
     </section>

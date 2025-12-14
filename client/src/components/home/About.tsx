@@ -1,17 +1,19 @@
 import { Quote } from "lucide-react";
+import classroomKids from "@assets/96CA5F6D-E59D-4895-9B53-169540E63F4A_1765753011078.jpg";
 
 const About = () => {
   return (
     <section id="about" className="py-20 bg-card" aria-labelledby="about-heading">
-      <div className="container-custom">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="md:flex md:items-center md:gap-16">
           <div className="md:w-1/2 mb-10 md:mb-0">
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl blur-xl"></div>
               <img 
-                src="https://images.unsplash.com/photo-1588075592446-265bad1d8506?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                alt="American Seekers Academy students engaged in classical learning" 
-                className="relative rounded-xl shadow-2xl w-full h-auto border-4 border-white/50"
+                src={classroomKids}
+                alt="Smiling students at American Seekers Academy classroom" 
+                className="relative rounded-xl shadow-2xl w-full h-auto border-4 border-white/50 object-cover"
+                style={{ maxHeight: '450px' }}
                 loading="lazy"
               />
             </div>

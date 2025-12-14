@@ -1,4 +1,5 @@
 import Hero from "@/components/home/Hero";
+import VideoSection from "@/components/home/VideoSection";
 import Philosophy from "@/components/home/Philosophy";
 import Programs from "@/components/home/Programs";
 import Testimonials from "@/components/home/Testimonials";
@@ -37,6 +38,7 @@ const Home = () => {
   return (
     <>
       <Hero />
+      <VideoSection />
       <Philosophy />
       <Programs />
       <Testimonials />
