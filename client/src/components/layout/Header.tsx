@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
-import logoImage from "@assets/ASA_Logo_2025_landscape_1765749079703.png";
+import logoImage from "@assets/image_1765749931677.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
