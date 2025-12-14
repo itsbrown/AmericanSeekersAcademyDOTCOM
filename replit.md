@@ -4,6 +4,42 @@
 
 American Seekers Academy is a full-stack web application for a classical education homeschool co-op. The platform showcases educational programs for children of various ages, allows parents to explore curriculum details, subscribe to newsletters, and suggest new locations for the academy. The site emphasizes a classical education model with American values and civic virtue.
 
+## Brand Guidelines
+
+### Color Palette
+- **Main Blue**: #336694 (primary brand color)
+- **Accent Light Blue**: #b4cfe8 (backgrounds, highlights)
+- **Main Red**: #d01515 (secondary accent)
+- **Green (Action Items)**: #179458 (buttons, CTAs)
+- **Text**: #000000 (black)
+
+### Brand Voice & Mission
+**Mission Statement**: We are aiming to provide homeschool families access to a private, in-person classical education that guarantees parents' right to choose what is best for their child. Our drop off program helps make homeschooling a success for the whole family and cultivates civic virtue while preparing students for a life of freedom and intellectual growth.
+
+**Key Taglines**:
+- "Helping others to find peace in the balance of learning and living"
+- "Learn Best + Make Friends + Live Well"
+- "Find the perfect balance between learning and living"
+- "Making homeschooling a success for the whole family"
+- "Kids Learn. Parents Heard."
+
+**Core Messaging**:
+- A meaningful, human connection with a teacher is an invaluable benefit to a child
+- We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from
+- Our Hybrid Homeschooling model combines the best aspects of traditional and Classical, in person instruction with the ideal part-time schedule for modern homeschool families
+- By decentralizing education, the power goes back to the parents
+
+### Programs (6 Total)
+1. **Macaronis** - Ages 6 months to 3 years
+2. **Yankee Doodle** - Ages 4-5 (PreK-K)
+3. **Tycoons** - Grades 1-2
+4. **Seekers** - Grades 3-5
+5. **Pioneers** - Grades 6-8
+6. **Patriots** - Grades 9-12
+
+### Curriculum Sources
+Hillsdale College, Literacy Essentials, IEW, WOL, Dimensions Math, PragerU, MENSA, Tuttle Twins
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
