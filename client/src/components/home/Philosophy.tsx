@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { ChevronRight, BookOpen, Users, Flag } from "lucide-react";
 
 const Philosophy = () => {
@@ -57,14 +56,21 @@ const Philosophy = () => {
         </div>
 
         <div className="mt-14 text-center">
-          <Link 
+          <a 
             href="#about" 
-            className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors duration-200"
+            onClick={(e) => {
+              e.preventDefault();
+              const element = document.getElementById('about');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors duration-200 cursor-pointer"
             data-testid="philosophy-learn-more"
           >
             Learn more about our approach
             <ChevronRight className="ml-1 h-4 w-4" />
-          </Link>
+          </a>
         </div>
       </div>
     </section>
