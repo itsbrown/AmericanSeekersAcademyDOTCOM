@@ -1,8 +1,15 @@
 import { programs } from '@/lib/constants';
 import { ChevronRight } from 'lucide-react';
-import { Link } from 'wouter';
 
 const Comparison = () => {
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    const element = document.getElementById(sectionId.replace("#", ""));
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="py-16 bg-neutral-50">
       <div className="container-custom">
@@ -41,10 +48,15 @@ const Comparison = () => {
         </div>
         
         <div className="mt-8 text-center">
-          <Link href="#programs" className="inline-flex items-center text-primary hover:text-primary/90 font-medium">
+          <a 
+            href="#programs" 
+            onClick={(e) => scrollToSection(e, "#programs")}
+            className="inline-flex items-center text-primary hover:text-primary/90 font-medium cursor-pointer"
+            data-testid="link-view-programs"
+          >
             View detailed program information
             <ChevronRight className="ml-1 h-4 w-4" />
-          </Link>
+          </a>
         </div>
       </div>
     </section>
