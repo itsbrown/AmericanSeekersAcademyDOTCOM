@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { programs } from "@/lib/constants";
 import { MapPin, Phone, Mail, Facebook, Instagram, Youtube } from "lucide-react";
-import logoImage from "@assets/image_1765749931677.png";
+import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
 
 const Footer = () => {
   return (
@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div>
             <Link href="/" className="inline-block mb-4" aria-label="American Seekers Academy Home">
-              <img src={logoImage} alt="American Seekers Academy" className="h-12 w-auto brightness-0 invert" />
+              <img src={logoImage} alt="American Seekers Academy" className="h-12 w-auto" />
             </Link>
             <p className="text-white/70 mb-6 leading-relaxed">
               A drop-off homeschool co-op created by homeschool parents for all parents who want more.
