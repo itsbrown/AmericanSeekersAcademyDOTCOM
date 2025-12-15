@@ -13,6 +13,57 @@ const programPdfUrls: Record<string, string> = {
   "patriots": "/pdfs/patriots.pdf",
 };
 
+async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    console.log("BREVO_API_KEY not configured - skipping location suggestion notification");
+    return;
+  }
+
+  const emailContent = `
+    <html>
+      <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #1e3a5f;">New Location Suggestion Received</h1>
+          <p>Someone has suggested a new location for American Seekers Academy!</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #1e3a5f; margin-top: 0;">Submission Details</h2>
+            <p><strong>Name:</strong> ${suggestion.name}</p>
+            <p><strong>Email:</strong> ${suggestion.email}</p>
+            <p><strong>Suggested Location:</strong> ${suggestion.location}</p>
+            ${suggestion.comments ? `<p><strong>Additional Comments:</strong> ${suggestion.comments}</p>` : ''}
+          </div>
+          
+          <p style="margin-top: 30px; font-size: 14px; color: #666;">
+            This is an automated notification from your American Seekers Academy website.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "American Seekers Academy", email: "info@americanseekersacademy.com" },
+      to: [{ email: "info@americanseekersacademy.com", name: "American Seekers Academy" }],
+      subject: `New Location Suggestion: ${suggestion.location}`,
+      htmlContent: emailContent,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Failed to send location suggestion notification: ${errorText}`);
+  }
+}
+
 async function sendBrevoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
@@ -82,6 +133,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertLocationSuggestionSchema.parse(req.body);
       const suggestion = await storage.createLocationSuggestion(validatedData);
+      
+      // Send email notification (don't block on this)
+      sendLocationSuggestionNotification(validatedData).catch(err => {
+        console.error("Failed to send location suggestion notification:", err);
+      });
+      
       res.status(201).json({ success: true, suggestion });
     } catch (error) {
       if (error instanceof Error) {
