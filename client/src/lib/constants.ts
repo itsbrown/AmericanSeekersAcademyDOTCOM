@@ -300,7 +300,7 @@ export const testimonials = [
   },
   {
     name: "Amy Misso",
-    role: "Parent of daughters",
+    role: "ASA member",
     content: "I'm so thankful for American Seekers Academy! My daughters absolutely love this school. The curriculum is top notch - my struggling reader flourished with their Literacy Essentials curriculum. I love that the first half of the day is core subjects including math and IEW. I'm so thankful my girls can attend this school and learn core subjects as well as interesting and unique extracurriculars.",
     rating: 5
   }
