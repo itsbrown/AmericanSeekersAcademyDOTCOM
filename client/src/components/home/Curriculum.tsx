@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, BookOpen, GraduationCap } from 'lucide-react';
+import { BookOpen, GraduationCap } from 'lucide-react';
 import { curriculumSubjects, trustedSources, curriculumTabs } from '@/lib/constants';
 
 const Curriculum = () => {
@@ -98,12 +98,6 @@ const Curriculum = () => {
                     ))}
                   </div>
                   
-                  <div className="flex justify-center">
-                    <a href="#" className="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors duration-200" data-testid="curriculum-details-link">
-                      See detailed curriculum by age group
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </a>
-                  </div>
                 </div>
               )}
             </div>
