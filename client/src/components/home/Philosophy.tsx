@@ -11,7 +11,7 @@ const Philosophy = () => {
     {
       icon: Users,
       title: "Parent-Driven",
-      description: "Created by a homeschool family for other parents who want more for their children's education while maintaining educational freedom.",
+      description: "Created by a homeschool family for other parents who want more for their children's education.",
       testId: "philosophy-parent"
     },
     {

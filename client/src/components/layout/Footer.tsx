@@ -13,7 +13,7 @@ const Footer = () => {
               <img src={logoImage} alt="American Seekers Academy" className="h-12 w-auto" />
             </Link>
             <p className="text-white/70 mb-6 leading-relaxed">
-              Created by a homeschool family for other parents who want more for their children's education while maintaining educational freedom.
+              Created by a homeschool family for other parents who want more for their children's education.
             </p>
             <div className="flex space-x-4">
               <a 
