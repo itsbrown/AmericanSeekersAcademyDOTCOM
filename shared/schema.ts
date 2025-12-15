@@ -47,3 +47,22 @@ export const insertNewsletterSchema = createInsertSchema(newsletters).pick({
 
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 export type Newsletter = typeof newsletters.$inferSelect;
+
+export const programInfoRequests = pgTable("program_info_requests", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  programSlug: text("program_slug").notNull(),
+  programName: text("program_name").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertProgramInfoRequestSchema = createInsertSchema(programInfoRequests).pick({
+  name: true,
+  email: true,
+  programSlug: true,
+  programName: true,
+});
+
+export type InsertProgramInfoRequest = z.infer<typeof insertProgramInfoRequestSchema>;
+export type ProgramInfoRequest = typeof programInfoRequests.$inferSelect;

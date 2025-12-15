@@ -1,7 +1,8 @@
 import { 
   users, type User, type InsertUser,
   locationSuggestions, type LocationSuggestion, type InsertLocationSuggestion,
-  newsletters, type Newsletter, type InsertNewsletter
+  newsletters, type Newsletter, type InsertNewsletter,
+  programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest
 } from "@shared/schema";
 
 export interface IStorage {
@@ -17,23 +18,30 @@ export interface IStorage {
   // Newsletter subscription methods
   subscribeToNewsletter(email: InsertNewsletter): Promise<Newsletter>;
   isEmailSubscribed(email: string): Promise<boolean>;
+  
+  // Program info request methods
+  createProgramInfoRequest(request: InsertProgramInfoRequest): Promise<ProgramInfoRequest>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private locationSuggestions: Map<number, LocationSuggestion>;
   private newsletters: Map<number, Newsletter>;
+  private programInfoRequests: Map<number, ProgramInfoRequest>;
   private userCurrentId: number;
   private locationSuggestionCurrentId: number;
   private newsletterCurrentId: number;
+  private programInfoRequestCurrentId: number;
 
   constructor() {
     this.users = new Map();
     this.locationSuggestions = new Map();
     this.newsletters = new Map();
+    this.programInfoRequests = new Map();
     this.userCurrentId = 1;
     this.locationSuggestionCurrentId = 1;
     this.newsletterCurrentId = 1;
+    this.programInfoRequestCurrentId = 1;
   }
 
   // User methods
@@ -95,6 +103,19 @@ export class MemStorage implements IStorage {
     return Array.from(this.newsletters.values()).some(
       (newsletter) => newsletter.email === email,
     );
+  }
+  
+  // Program info request methods
+  async createProgramInfoRequest(request: InsertProgramInfoRequest): Promise<ProgramInfoRequest> {
+    const id = this.programInfoRequestCurrentId++;
+    const nowISOString = new Date().toISOString();
+    const programInfoRequest: ProgramInfoRequest = { 
+      ...request, 
+      id, 
+      createdAt: nowISOString 
+    };
+    this.programInfoRequests.set(id, programInfoRequest);
+    return programInfoRequest;
   }
 }
 

@@ -5,10 +5,12 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
+import RequestInfoModal from "@/components/common/RequestInfoModal";
 
 const ProgramDetail = () => {
   const [, params] = useRoute("/programs/:slug");
   const [program, setProgram] = useState(programs[0]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     // Find the program that matches the slug in the URL
@@ -133,9 +135,13 @@ const ProgramDetail = () => {
                 
                 <Separator className="my-6" />
                 
-                <Link href="/#contact">
-                  <Button className="w-full">Request More Information</Button>
-                </Link>
+                <Button 
+                  className="w-full" 
+                  onClick={() => setIsModalOpen(true)}
+                  data-testid="request-info-btn"
+                >
+                  Request More Information
+                </Button>
                 
                 <div className="mt-4 text-center">
                   <Link href="/#locations" className="text-primary hover:text-primary/90 text-sm">
@@ -147,6 +153,13 @@ const ProgramDetail = () => {
           </div>
         </div>
       </div>
+
+      <RequestInfoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        programSlug={program.slug}
+        programName={program.name}
+      />
     </div>
   );
 };
