@@ -310,11 +310,11 @@ export const locations = [
   {
     name: "Brighton Campus",
     address: "",
-    hours: "Monday, Wednesday, Friday 9am-12pm"
+    hours: "Monday, Wednesday, Friday 9am-2pm"
   },
   {
     name: "Greece Campus",
     address: "",
-    hours: "Monday, Wednesday, Friday 9am-12pm"
+    hours: "Monday, Wednesday, Friday 9am-2pm"
   }
 ];
