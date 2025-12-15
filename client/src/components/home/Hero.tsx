@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpen, Users } from "lucide-react";
-import classroomImage from "@assets/PXL_20250908_131653431_1765830991848.jpg";
+import classroomImage from "@assets/PXL_20250908_131653431_1765831859760.jpg";
 
 const Hero = () => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
