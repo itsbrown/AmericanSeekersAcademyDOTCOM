@@ -135,13 +135,23 @@ const ProgramDetail = () => {
                 
                 <Separator className="my-6" />
                 
-                <Button 
-                  className="w-full" 
+                <a 
+                  href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full mb-4 inline-flex items-center justify-center bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-6 py-4 text-base font-bold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+                  data-testid="program-register-btn"
+                >
+                  Register Now
+                </a>
+                
+                <button 
+                  className="w-full text-[#1e3a5f] hover:text-[#1e3a5f]/80 px-4 py-2 text-sm font-medium underline underline-offset-2 transition-colors duration-200"
                   onClick={() => setIsModalOpen(true)}
                   data-testid="request-info-btn"
                 >
                   Request More Information
-                </Button>
+                </button>
                 
                 <div className="mt-4 text-center">
                   <Link href="/#locations" className="text-primary hover:text-primary/90 text-sm">

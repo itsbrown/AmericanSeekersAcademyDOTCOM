@@ -101,6 +101,17 @@ const Header = () => {
                   Contact
                 </a>
               </li>
+              <li>
+                <a 
+                  href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                  data-testid="nav-register"
+                >
+                  Register
+                </a>
+              </li>
             </ul>
           </nav>
           
@@ -151,7 +162,17 @@ const Header = () => {
             className="mt-3 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             data-testid="mobile-nav-contact"
           >
-            Contact</a>
+            Contact
+          </a>
+          <a 
+            href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block w-full bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white text-center py-3 font-semibold rounded cursor-pointer transition-colors duration-200"
+            data-testid="mobile-nav-register"
+          >
+            Register Now
+          </a>
         </div>
       </div>
     </header>
