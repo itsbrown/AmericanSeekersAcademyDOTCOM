@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import { z } from "zod";
 import { storage } from "./storage";
 import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
@@ -382,9 +383,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ success: true, inquiry });
     } catch (error) {
       console.error("Contact inquiry error:", error);
-      if (error instanceof Error) {
+      if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
+      } else if (error instanceof Error) {
+        res.status(500).json({ success: false, message: error.message });
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }
