@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
 import { useRoute, Link } from "wouter";
-import { programs } from "@/lib/constants";
-import { ChevronLeft } from "lucide-react";
+import { programs, extracurriculars } from "@/lib/constants";
+import { ChevronLeft, Clock, DollarSign, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import RequestInfoModal from "@/components/common/RequestInfoModal";
+
+import cupcakeKids from "@assets/IMG_7597_1765752960405.jpeg";
+import classroomKids from "@assets/96CA5F6D-E59D-4895-9B53-169540E63F4A_1765753011078.jpg";
+import writingKid from "@assets/20251027_105131_1765752909793.jpg";
+import learningKids from "@assets/IMG_0906_1765752944366.jpeg";
+import pioneersImage from "@assets/IMG_7156_1765776150637.jpeg";
+import patriotsImage from "@assets/PXL_20250908_143504765.MP_1765774245494.jpg";
+
+const programImages: Record<string, string> = {
+  "macaronis": learningKids,
+  "yankee-doodle": writingKid,
+  "tycoons": cupcakeKids,
+  "seekers": classroomKids,
+  "pioneers": pioneersImage,
+  "patriots": patriotsImage,
+};
 
 const ProgramDetail = () => {
   const [, params] = useRoute("/programs/:slug");
@@ -61,7 +77,7 @@ const ProgramDetail = () => {
             <p className="text-lg text-neutral-600 mb-6">{program.ageRange} | {program.grades}</p>
             
             <img 
-              src={program.imageUrl} 
+              src={programImages[program.slug] || program.imageUrl} 
               alt={program.name} 
               className="w-full h-auto object-cover rounded-lg shadow-md mb-8"
               style={{ maxHeight: '400px' }} 
@@ -99,6 +115,35 @@ const ProgramDetail = () => {
                 </div>
               ))}
             </div>
+            
+            {program.pricing.fullDay !== null && (
+              <>
+                <Separator className="my-8" />
+                
+                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                  <Sparkles className="h-6 w-6 text-accent" />
+                  Extracurriculars
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Full-day students (9:00 AM - 2:00 PM) enjoy a variety of enriching extracurricular activities during the afternoon session.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {extracurriculars.map((activity, index) => (
+                    <div key={index} className="bg-accent/5 p-4 rounded-lg border border-accent/20">
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-accent/10 text-accent mr-3">
+                          <Sparkles className="h-4 w-4" />
+                        </span>
+                        <span className="font-medium">{activity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground italic bg-neutral-50 p-3 rounded-lg">
+                  Note: Extracurricular offerings are subject to change each session based on availability and student interest.
+                </p>
+              </>
+            )}
           </div>
           
           <div>
@@ -129,8 +174,53 @@ const ProgramDetail = () => {
                   
                   <div>
                     <h4 className="font-semibold text-sm text-neutral-500 mb-1">Hours</h4>
-                    <p>9:00 AM - 12:00 PM</p>
+                    <p>9:00 AM - 2:00 PM</p>
                   </div>
+                </div>
+                
+                <Separator className="my-6" />
+                
+                {/* Pricing Section */}
+                <div className="mb-6">
+                  <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-accent" />
+                    Pricing Options
+                  </h4>
+                  
+                  {program.pricing.halfDay !== null || program.pricing.fullDay !== null ? (
+                    <div className="space-y-3">
+                      {program.pricing.halfDay !== null && (
+                        <div className="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="font-semibold">Half Day</span>
+                          </div>
+                          <p className="text-sm text-neutral-600 mb-2">9:00 AM - 12:00 PM</p>
+                          <p className="text-2xl font-bold text-primary">${program.pricing.halfDay.toLocaleString()}</p>
+                          <p className="text-xs text-neutral-500">per 10-week session</p>
+                        </div>
+                      )}
+                      
+                      {program.pricing.fullDay !== null && (
+                        <div className="bg-accent/10 p-4 rounded-lg border-2 border-accent">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="h-4 w-4 text-accent" />
+                            <span className="font-semibold">Full Day</span>
+                            <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full">Popular</span>
+                          </div>
+                          <p className="text-sm text-neutral-600 mb-2">9:00 AM - 2:00 PM</p>
+                          <p className="text-2xl font-bold text-accent">${program.pricing.fullDay.toLocaleString()}</p>
+                          <p className="text-xs text-neutral-500">per 10-week session</p>
+                          <p className="text-xs text-accent mt-2 font-medium flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            Includes extracurriculars
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-neutral-600 italic">{program.pricing.note || "Contact us for pricing"}</p>
+                  )}
                 </div>
                 
                 <Separator className="my-6" />
