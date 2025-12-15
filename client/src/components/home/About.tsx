@@ -20,16 +20,19 @@ const About = () => {
           </div>
           <div className="md:w-1/2">
             <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-full mb-6" data-testid="about-badge">
-              Our Mission
+              About Us
             </span>
             <h2 id="about-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              Cultivating Civic Virtue
+              Exceptional Classical Education
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              We aim to provide homeschool families access to a private, in-person classical education that guarantees parents' right to choose what is best for their child. Our drop-off program helps make homeschooling a success for the whole family and cultivates civic virtue while preparing students for a life of freedom and intellectual growth.
+              At American Seekers Academy, we strive to provide an exceptional Classical homeschool program that goes beyond traditional co-ops using trained professionals and vetted curricula from highly acclaimed sources.
+            </p>
+            <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+              Our members are proud of their American heritage and hope to instill in children a love of country, methods to self govern and a desire to preserve the illuminated entrepreneurial spirit for generations to come.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              American Seekers Academy was designed by homeschool parents who needed more than the average co-op could provide. We welcome anyone to study here regardless of their faith tradition, political affiliation, or personal ideologies.
+              While we place a strong focus on Literacy excellence and accurate History, students will also be given a well-rounded education with a rotation of subjects including: Civics, Math, Science, Creative Writing and Art.
             </p>
             <blockquote className="relative pl-6 border-l-4 border-accent" data-testid="about-quote">
               <Quote className="absolute -left-3 -top-2 h-6 w-6 text-accent/30" aria-hidden="true" />
