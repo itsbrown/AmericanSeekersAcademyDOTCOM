@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
-import logoImage from "@assets/image_1765749931677.png";
+import logoImage from "@assets/ASA_Logo-wt-transparentBG_1765753925390.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -71,7 +71,7 @@ const Header = () => {
               <img 
                 src={logoImage} 
                 alt="American Seekers Academy" 
-                className="h-10 md:h-12 w-auto brightness-0 invert" 
+                className="h-10 md:h-12 w-auto" 
               />
             </Link>
           </div>
