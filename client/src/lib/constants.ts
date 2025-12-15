@@ -19,14 +19,19 @@ export interface Program {
 }
 
 export const extracurriculars = [
-  "Trail Trekkers (Outdoor Exploration)",
-  "Liberty Ladle Culinary Club",
-  "Art History & Design",
-  "Music & Movement",
-  "Drama & Performance",
-  "STEM Challenges",
-  "Physical Education & Games",
-  "Nature Study"
+  "Latin",
+  "Baking",
+  "Cake Decorating",
+  "Music",
+  "Band",
+  "Lego Engineering",
+  "Architecture",
+  "Etiquette Class",
+  "Shark Tank",
+  "Entrepreneur Class",
+  "Sculpture",
+  "Drawing",
+  "Sewing"
 ];
 
 export const programs: Program[] = [
