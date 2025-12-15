@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpen, Users } from "lucide-react";
-import flagCeremonyImage from "@assets/PXL_20250912_125751573_1765752840343.jpg";
+import classroomImage from "@assets/PXL_20250908_131653431_1765830991848.jpg";
 
 const Hero = () => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
@@ -15,8 +15,8 @@ const Hero = () => {
       {/* Full-width Background Image - Hillsdale Style */}
       <div className="absolute inset-0">
         <img 
-          src={flagCeremonyImage}
-          alt="Students gathered for flag ceremony at American Seekers Academy" 
+          src={classroomImage}
+          alt="Students engaged in classroom learning at American Seekers Academy" 
           className="w-full h-full object-cover"
           loading="eager"
         />
