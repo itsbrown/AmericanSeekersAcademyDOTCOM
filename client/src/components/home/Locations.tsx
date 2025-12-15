@@ -40,7 +40,9 @@ const Locations = () => {
                       </div>
                       <div>
                         <h4 className="font-bold text-foreground mb-1">{location.name}</h4>
-                        <p className="text-muted-foreground text-sm mb-2">{location.address}</p>
+                        {location.address && (
+                          <p className="text-muted-foreground text-sm mb-2">{location.address}</p>
+                        )}
                         <p className="inline-flex items-center text-sm text-muted-foreground">
                           <Clock className="h-4 w-4 mr-1" />
                           {location.hours}

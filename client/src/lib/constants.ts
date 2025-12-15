@@ -309,12 +309,12 @@ export const testimonials = [
 export const locations = [
   {
     name: "Brighton Campus",
-    address: "123 Education Way, Brighton, NY 14610",
+    address: "",
     hours: "Monday, Wednesday, Friday 9am-12pm"
   },
   {
-    name: "Pittsford Campus",
-    address: "456 Learning Lane, Pittsford, NY 14534",
+    name: "Greece Campus",
+    address: "",
     hours: "Monday, Wednesday, Friday 9am-12pm"
   }
 ];
