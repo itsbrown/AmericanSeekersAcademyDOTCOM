@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Play, X } from "lucide-react";
-import logoThumbnail from "@assets/Logo_thumbnail_1765753257700.png";
+import videoThumbnail from "@assets/Screen_Shot_2025-12-15_at_4.00.28_PM_1765832463000.png";
 
 const VideoSection = () => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -23,11 +23,11 @@ const VideoSection = () => {
             {!isVideoPlaying ? (
               <>
                 {/* Video Thumbnail with Logo */}
-                <div className="relative aspect-video bg-white">
+                <div className="relative aspect-video bg-black">
                   <img 
-                    src={logoThumbnail}
-                    alt="American Seekers Academy - Making homeschooling a success for the whole family"
-                    className="w-full h-full object-contain p-8"
+                    src={videoThumbnail}
+                    alt="Students raising hands in classroom at American Seekers Academy"
+                    className="w-full h-full object-cover"
                   />
                   {/* Play Button Overlay */}
                   <button
