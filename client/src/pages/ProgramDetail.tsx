@@ -172,10 +172,12 @@ const ProgramDetail = () => {
                     <p>Monday, Wednesday, Friday</p>
                   </div>
                   
-                  <div>
-                    <h4 className="font-semibold text-sm text-neutral-500 mb-1">Hours</h4>
-                    <p>9:00 AM - 2:00 PM</p>
-                  </div>
+                  {program.slug === "macaronis" && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-neutral-500 mb-1">Hours</h4>
+                      <p>9:00 AM - 2:00 PM</p>
+                    </div>
+                  )}
                 </div>
                 
                 <Separator className="my-6" />
