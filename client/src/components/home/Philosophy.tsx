@@ -6,7 +6,7 @@ const Philosophy = () => {
     {
       icon: BookOpen,
       title: "Classical Model",
-      description: "The Trivium and Quadrivium provide a basis for core subjects taught throughout the week, creating a well-rounded educational foundation.",
+      description: "Through trained teachers and the classical Trivium and Quadrivium, we provide the meaningful connection that helps children thrive academically and socially.",
       testId: "philosophy-classical"
     },
     {
