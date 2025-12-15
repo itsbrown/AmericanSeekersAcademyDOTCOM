@@ -46,7 +46,7 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
           <p style="margin-top: 30px; font-size: 14px; color: #666;">
             Best regards,<br>
             The American Seekers Academy Team<br>
-            <em>"Learn Best. Make Friends. Live Well."</em>
+            <em>"Learn Better. Make Friends. Live Well."</em>
           </p>
         </div>
       </body>

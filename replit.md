@@ -31,7 +31,7 @@ American Seekers Academy is a full-stack web application for a classical educati
 
 **Key Taglines**:
 - "Helping others to find peace in the balance of learning and living"
-- "Learn Best + Make Friends + Live Well"
+- "Learn Better + Make Friends + Live Well"
 - "Find the perfect balance between learning and living"
 - "Making homeschooling a success for the whole family"
 - "Kids Learn. Parents Heard."

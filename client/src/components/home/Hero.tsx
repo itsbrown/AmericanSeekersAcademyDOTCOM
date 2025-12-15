@@ -92,8 +92,8 @@ const Hero = () => {
       {/* Bottom Quote Bar */}
       <div className="absolute bottom-0 left-0 right-0 bg-[#1e3a5f]/95 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-white/90 text-sm md:text-base font-medium italic" data-testid="hero-quote">
-            "Learn Best. Make Friends. Live Well."
+          <p className="text-center text-white/90 text-xl md:text-2xl font-medium italic" data-testid="hero-quote">
+            "Learn Better. Make Friends. Live Well."
           </p>
         </div>
       </div>
