@@ -287,21 +287,21 @@ export const faqs = [
 
 export const testimonials = [
   {
-    name: "The Brown Family",
-    role: "Homeschooling since 2020",
-    content: "Homeschooling our children gave us more time to spend together and an opportunity to shape their education according to our standards. American Seekers Academy has given us the structure and support we needed to make homeschooling truly successful.",
+    name: "Andréa Evans",
+    role: "Parent of five children",
+    content: "I am an actual parent who sends FIVE children to this school. Not only is the school and learning excellent but the teachers, other community members and families involved are wonderful. Our family is so grateful for this school and community. Our children have thrived here educationally and have felt supported. I cannot recommend ASA enough.",
     rating: 5
   },
   {
-    name: "Jessica W.",
-    role: "Parent of three",
-    content: "We switched to homeschooling during the pandemic and were looking for a program that aligned with our educational philosophy. ASA's classical approach provides the perfect balance of structure and flexibility for our family.",
+    name: "Mike Mastrodonato",
+    role: "ASA Parent",
+    content: "Great program with kind people who actually want to see kids become well rounded people and responsible citizens. I highly recommend for those who are tired of mainstream education for their children.",
     rating: 5
   },
   {
-    name: "The Andersons",
-    role: "New to homeschooling",
-    content: "As first-time homeschoolers, we were overwhelmed until we found American Seekers Academy. The curriculum is comprehensive, the mentors are supportive, and our children are thriving in ways we never expected.",
+    name: "Amy Misso",
+    role: "Parent of daughters",
+    content: "I'm so thankful for American Seekers Academy! My daughters absolutely love this school. The curriculum is top notch - my struggling reader flourished with their Literacy Essentials curriculum. I love that the first half of the day is core subjects including math and IEW. I'm so thankful my girls can attend this school and learn core subjects as well as interesting and unique extracurriculars.",
     rating: 5
   }
 ];
