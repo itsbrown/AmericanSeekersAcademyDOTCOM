@@ -34,7 +34,7 @@ const About = () => {
             <blockquote className="relative pl-6 border-l-4 border-accent" data-testid="about-quote">
               <Quote className="absolute -left-3 -top-2 h-6 w-6 text-accent/30" aria-hidden="true" />
               <p className="text-lg font-medium text-foreground italic leading-relaxed">
-                "Helping others to find peace in the balance of learning and living, this co-op was created by homeschool parents for all parents who want more."
+                "Created by a homeschool family for other parents who want more for their children's education while maintaining educational freedom."
               </p>
             </blockquote>
           </div>
