@@ -51,7 +51,7 @@ const VideoSection = () => {
                   autoPlay
                   data-testid="video-player"
                 >
-                  <source src="/promo-video.mov" type="video/quicktime" />
+                  <source src="/promo-video.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
                 {/* Close Button */}
