@@ -5,8 +5,8 @@ import cupcakeKids from "@assets/IMG_7597_1765752960405.jpeg";
 import classroomKids from "@assets/96CA5F6D-E59D-4895-9B53-169540E63F4A_1765753011078.jpg";
 import writingKid from "@assets/20251027_105131_1765752909793.jpg";
 import learningKids from "@assets/IMG_0906_1765752944366.jpeg";
-import stockImage1 from "@assets/stock_images/happy_smiling_childr_7dbcac43.jpg";
-import stockImage2 from "@assets/stock_images/happy_smiling_childr_ce8b9110.jpg";
+import pioneersImage from "@assets/IMG_7156_1765776150637.jpeg";
+import patriotsImage from "@assets/PXL_20250908_143504765.MP_1765774245494.jpg";
 
 const programsData = [
   {
@@ -42,14 +42,14 @@ const programsData = [
     name: "Pioneers",
     ageRange: "Grades 6-8",
     description: "Challenges students intellectually and philosophically with structured curricula highlighting America's founding principles, emphasizing self-governance and critical thinking.",
-    imageUrl: stockImage1,
+    imageUrl: pioneersImage,
   },
   {
     slug: "patriots",
     name: "Patriots",
     ageRange: "Grades 9-12",
     description: "Prepares students for intellectual and civic leadership with structured curricula covering all common subjects and highlighting America's founding principles.",
-    imageUrl: stockImage2,
+    imageUrl: patriotsImage,
   }
 ];
 
