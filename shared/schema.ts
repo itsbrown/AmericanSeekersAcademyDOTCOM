@@ -66,3 +66,20 @@ export const insertProgramInfoRequestSchema = createInsertSchema(programInfoRequ
 
 export type InsertProgramInfoRequest = z.infer<typeof insertProgramInfoRequestSchema>;
 export type ProgramInfoRequest = typeof programInfoRequests.$inferSelect;
+
+export const contactInquiries = pgTable("contact_inquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertContactInquirySchema = createInsertSchema(contactInquiries).pick({
+  name: true,
+  email: true,
+  message: true,
+});
+
+export type InsertContactInquiry = z.infer<typeof insertContactInquirySchema>;
+export type ContactInquiry = typeof contactInquiries.$inferSelect;

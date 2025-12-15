@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { programs } from "@/lib/constants";
-import { MapPin, Phone, Mail, Facebook, Instagram, Youtube } from "lucide-react";
+import { Phone, Mail, Facebook, Instagram, Youtube } from "lucide-react";
 import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
 
 const Footer = () => {
@@ -75,23 +75,16 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold text-white mb-6">Contact Us</h3>
             <ul className="space-y-4" role="list">
-              <li className="flex items-start">
-                <MapPin className="h-5 w-5 mt-0.5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
-                <address className="text-white/70 not-italic">
-                  123 Education Way<br />
-                  Brighton, NY 14610
-                </address>
-              </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
-                <a href="tel:+15855551234" className="text-white/70 hover:text-accent transition-colors duration-200">
-                  (585) 555-1234
+                <a href="tel:+15852102021" className="text-white/70 hover:text-accent transition-colors duration-200">
+                  (585) 210-2021
                 </a>
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-3 text-accent flex-shrink-0" aria-hidden="true" />
-                <a href="mailto:info@americanseekersacademy.com" className="text-white/70 hover:text-accent transition-colors duration-200">
-                  info@americanseekersacademy.com
+                <a href="mailto:contact@americanseekersacademy.com" className="text-white/70 hover:text-accent transition-colors duration-200">
+                  contact@americanseekersacademy.com
                 </a>
               </li>
             </ul>

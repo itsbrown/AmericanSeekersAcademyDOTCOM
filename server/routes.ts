@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -12,6 +12,139 @@ const programPdfUrls: Record<string, string> = {
   "pioneers": "/pdfs/pioneers.pdf",
   "patriots": "/pdfs/patriots.pdf",
 };
+
+const BREVO_WEBSITE_CONTACTS_LIST_ID = 2; // Will be created/updated on first use
+
+async function getOrCreateBrevoList(): Promise<number> {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) return BREVO_WEBSITE_CONTACTS_LIST_ID;
+
+  try {
+    // Try to get existing lists to find "Website Contacts"
+    const listsResponse = await fetch("https://api.brevo.com/v3/contacts/lists?limit=50", {
+      method: "GET",
+      headers: {
+        "accept": "application/json",
+        "api-key": apiKey,
+      },
+    });
+
+    if (listsResponse.ok) {
+      const listsData = await listsResponse.json();
+      const existingList = listsData.lists?.find((list: { name: string; id: number }) => 
+        list.name === "Website Contacts"
+      );
+      if (existingList) {
+        return existingList.id;
+      }
+    }
+
+    // Create the list if it doesn't exist
+    const createResponse = await fetch("https://api.brevo.com/v3/contacts/lists", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Website Contacts",
+        folderId: 1
+      }),
+    });
+
+    if (createResponse.ok) {
+      const createData = await createResponse.json();
+      return createData.id;
+    }
+  } catch (error) {
+    console.error("Error getting/creating Brevo list:", error);
+  }
+
+  return BREVO_WEBSITE_CONTACTS_LIST_ID;
+}
+
+async function addContactToBrevoList(email: string, name: string, listId: number) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const nameParts = name.split(" ");
+    const firstName = nameParts[0] || name;
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    await fetch("https://api.brevo.com/v3/contacts", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email,
+        attributes: {
+          FIRSTNAME: firstName,
+          LASTNAME: lastName,
+        },
+        listIds: [listId],
+        updateEnabled: true
+      }),
+    });
+  } catch (error) {
+    console.error("Error adding contact to Brevo list:", error);
+  }
+}
+
+async function sendContactInquiryNotification(inquiry: { name: string; email: string; message: string }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    console.log("BREVO_API_KEY not configured - skipping contact inquiry notification");
+    return;
+  }
+
+  const emailContent = `
+    <html>
+      <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #1e3a5f;">New Contact Inquiry</h1>
+          <p>Someone has reached out through the American Seekers Academy website!</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #1e3a5f; margin-top: 0;">Contact Details</h2>
+            <p><strong>Name:</strong> ${inquiry.name}</p>
+            <p><strong>Email:</strong> <a href="mailto:${inquiry.email}">${inquiry.email}</a></p>
+            <p><strong>Message:</strong></p>
+            <p style="background-color: white; padding: 15px; border-radius: 4px; border-left: 4px solid #c4a052;">${inquiry.message.replace(/\n/g, '<br>')}</p>
+          </div>
+          
+          <p style="margin-top: 30px; font-size: 14px; color: #666;">
+            This is an automated notification from your American Seekers Academy website.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
+      to: [{ email: "contact@americanseekersacademy.com", name: "American Seekers Academy" }],
+      subject: `New Contact Inquiry from ${inquiry.name}`,
+      htmlContent: emailContent,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Failed to send contact inquiry notification: ${errorText}`);
+  }
+}
 
 async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }) {
   const apiKey = process.env.BREVO_API_KEY;
@@ -51,8 +184,8 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "American Seekers Academy", email: "info@americanseekersacademy.com" },
-      to: [{ email: "info@americanseekersacademy.com", name: "American Seekers Academy" }],
+      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
+      to: [{ email: "contact@americanseekersacademy.com", name: "American Seekers Academy" }],
       subject: `New Location Suggestion: ${suggestion.location}`,
       htmlContent: emailContent,
     }),
@@ -112,7 +245,7 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "American Seekers Academy", email: "info@americanseekersacademy.com" },
+      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
       to: [{ email: to, name: name }],
       subject: `${programName} Program Information - American Seekers Academy`,
       htmlContent: emailContent,
@@ -220,6 +353,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const validationError = fromZodError(error);
           res.status(400).json({ success: false, message: validationError.message });
         }
+      } else {
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+      }
+    }
+  });
+
+  // API route for contact inquiries with Brevo list and email notification
+  app.post("/api/contact-inquiry", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertContactInquirySchema.parse(req.body);
+      
+      // Save to database
+      const inquiry = await storage.createContactInquiry(validatedData);
+      
+      // Get or create the "Website Contacts" list and add contact (don't block)
+      getOrCreateBrevoList().then(listId => {
+        addContactToBrevoList(validatedData.email, validatedData.name, listId);
+      }).catch(err => {
+        console.error("Failed to add contact to Brevo list:", err);
+      });
+      
+      // Send email notification (don't block)
+      sendContactInquiryNotification(validatedData).catch(err => {
+        console.error("Failed to send contact inquiry notification:", err);
+      });
+      
+      res.status(201).json({ success: true, inquiry });
+    } catch (error) {
+      console.error("Contact inquiry error:", error);
+      if (error instanceof Error) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }

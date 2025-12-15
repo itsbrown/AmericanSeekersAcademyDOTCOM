@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
+import ContactModal from "@/components/common/ContactModal";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -92,14 +94,13 @@ const Header = () => {
                 </li>
               ))}
               <li>
-                <a 
-                  href="#contact" 
-                  onClick={(e) => scrollToSection(e, "#contact")} 
+                <button 
+                  onClick={() => setIsContactModalOpen(true)} 
                   className="ml-4 bg-white text-[#1e3a5f] hover:bg-gray-100 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
                   data-testid="nav-contact"
                 >
                   Contact
-                </a>
+                </button>
               </li>
               <li>
                 <a 
@@ -156,14 +157,13 @@ const Header = () => {
               {link.label}
             </a>
           ))}
-          <a 
-            href="#contact" 
-            onClick={(e) => scrollToSection(e, "#contact")} 
+          <button 
+            onClick={() => { closeMenu(); setIsContactModalOpen(true); }} 
             className="mt-3 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             data-testid="mobile-nav-contact"
           >
             Contact
-          </a>
+          </button>
           <a 
             href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
             target="_blank"
@@ -175,6 +175,10 @@ const Header = () => {
           </a>
         </div>
       </div>
+    <ContactModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </header>
   );
 };

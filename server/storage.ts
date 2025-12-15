@@ -4,7 +4,8 @@ import {
   users, type User, type InsertUser,
   locationSuggestions, type LocationSuggestion, type InsertLocationSuggestion,
   newsletters, type Newsletter, type InsertNewsletter,
-  programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest
+  programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest,
+  contactInquiries, type ContactInquiry, type InsertContactInquiry
 } from "@shared/schema";
 
 export interface IStorage {
@@ -23,6 +24,9 @@ export interface IStorage {
   
   // Program info request methods
   createProgramInfoRequest(request: InsertProgramInfoRequest): Promise<ProgramInfoRequest>;
+  
+  // Contact inquiry methods
+  createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +89,16 @@ export class DatabaseStorage implements IStorage {
       createdAt: nowISOString
     }).returning();
     return programInfoRequest;
+  }
+  
+  // Contact inquiry methods
+  async createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry> {
+    const nowISOString = new Date().toISOString();
+    const [contactInquiry] = await db.insert(contactInquiries).values({
+      ...inquiry,
+      createdAt: nowISOString
+    }).returning();
+    return contactInquiry;
   }
 }
 
