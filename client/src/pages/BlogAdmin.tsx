@@ -24,6 +24,7 @@ export default function BlogAdmin() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [pendingDeletes, setPendingDeletes] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -37,15 +38,16 @@ export default function BlogAdmin() {
     queryKey: ["/api/blog/all"],
   });
 
-  const posts = data?.posts || [];
+  const allPosts = data?.posts || [];
+  const posts = allPosts.filter((p) => !pendingDeletes.has(p.id));
 
   const createMutation = useMutation({
     mutationFn: async (post: Partial<InsertBlogPost>) => {
       return apiRequest("POST", "/api/blog", post);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/blog/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/blog/all"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/blog"] });
       toast({ title: "Success", description: "Blog post created successfully" });
       resetForm();
       setIsDialogOpen(false);
@@ -59,9 +61,9 @@ export default function BlogAdmin() {
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertBlogPost> }) => {
       return apiRequest("PUT", `/api/blog/${id}`, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/blog/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/blog/all"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/blog"] });
       toast({ title: "Success", description: "Blog post updated successfully" });
       resetForm();
       setIsDialogOpen(false);
@@ -75,12 +77,25 @@ export default function BlogAdmin() {
     mutationFn: async (id: number) => {
       return apiRequest("DELETE", `/api/blog/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/blog/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+    onMutate: (id: number) => {
+      setPendingDeletes((prev) => new Set(prev).add(id));
+    },
+    onSuccess: async (_data, id: number) => {
+      await queryClient.refetchQueries({ queryKey: ["/api/blog/all"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/blog"] });
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast({ title: "Success", description: "Blog post deleted successfully" });
     },
-    onError: () => {
+    onError: (_err, id: number) => {
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast({ title: "Error", description: "Failed to delete blog post", variant: "destructive" });
     },
   });
