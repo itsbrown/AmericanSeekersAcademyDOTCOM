@@ -17,6 +17,8 @@ const column2Items = [
 const column3Items = [
   { id: 9, text: "Progress Tracking" },
   { id: 10, text: "Medical Info NOT required" },
+  { id: 11, text: "Fundraisers" },
+  { id: 12, text: "Free After Three" },
 ];
 
 const ChecklistSection = () => {
