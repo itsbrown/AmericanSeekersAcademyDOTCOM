@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { programs } from "@/lib/constants";
-import { Phone, Mail, Facebook, Instagram, Youtube } from "lucide-react";
+import { Phone, Mail, Facebook, Instagram, Twitter } from "lucide-react";
 import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
 
 const Footer = () => {
@@ -17,7 +17,9 @@ const Footer = () => {
             </p>
             <div className="flex space-x-4">
               <a 
-                href="#" 
+                href="https://www.facebook.com/AmericanSeekersAcademy" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
                 aria-label="Facebook"
                 data-testid="footer-facebook"
@@ -25,7 +27,9 @@ const Footer = () => {
                 <Facebook className="h-5 w-5" />
               </a>
               <a 
-                href="#" 
+                href="https://www.instagram.com/americanseekersacademy/" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
                 aria-label="Instagram"
                 data-testid="footer-instagram"
@@ -33,12 +37,14 @@ const Footer = () => {
                 <Instagram className="h-5 w-5" />
               </a>
               <a 
-                href="#" 
+                href="https://twitter.com/1776Seekers" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white/70 hover:bg-accent hover:text-white transition-colors duration-200"
-                aria-label="YouTube"
-                data-testid="footer-youtube"
+                aria-label="Twitter"
+                data-testid="footer-twitter"
               >
-                <Youtube className="h-5 w-5" />
+                <Twitter className="h-5 w-5" />
               </a>
             </div>
           </div>
