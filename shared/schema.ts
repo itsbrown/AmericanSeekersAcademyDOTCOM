@@ -102,7 +102,13 @@ export const blogPosts = pgTable("blog_posts", {
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
   id: true,
+  createdAt: true,
 });
+
+export const updateBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+}).partial();
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;

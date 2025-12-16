@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -449,7 +449,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/blog/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.updateBlogPost(id, req.body);
+      const validatedData = updateBlogPostSchema.parse(req.body);
+      const post = await storage.updateBlogPost(id, validatedData);
       if (!post) {
         res.status(404).json({ success: false, message: "Blog post not found" });
         return;
@@ -457,7 +458,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, post });
     } catch (error) {
       console.error("Failed to update blog post:", error);
-      res.status(500).json({ success: false, message: "Failed to update blog post" });
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to update blog post" });
+      }
     }
   });
 

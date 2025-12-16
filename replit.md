@@ -102,8 +102,31 @@ Current schema includes:
 - `users` - Basic user authentication (id, username, password)
 - `locationSuggestions` - User-submitted location requests (name, email, location, comments)
 - `newsletters` - Email subscriptions (email, createdAt)
+- `programInfoRequests` - Program information requests (name, email, phone, programSlug, programName)
+- `contactInquiries` - Contact form submissions (name, email, phone, message)
+- `blogPosts` - Blog posts (title, slug, excerpt, content, featuredImage, published, publishedAt, createdAt)
 
-The storage layer uses an interface pattern (`IStorage`) with a `MemStorage` implementation for development, allowing easy swap to database storage.
+The storage layer uses an interface pattern (`IStorage`) with a `DatabaseStorage` implementation for PostgreSQL persistence.
+
+### Blog System
+
+The blog system includes:
+- **Routes**: 
+  - `/blog` - Public blog listing page showing published posts
+  - `/blog/:slug` - Individual blog post page with social sharing buttons
+  - `/blog/admin` - Admin page for creating, editing, and publishing posts
+- **API Endpoints**:
+  - `GET /api/blog` - Get published posts
+  - `GET /api/blog/all` - Get all posts (for admin)
+  - `GET /api/blog/:slug` - Get single post by slug
+  - `POST /api/blog` - Create new post
+  - `PUT /api/blog/:id` - Update post
+  - `DELETE /api/blog/:id` - Delete post
+- **Features**:
+  - Rich HTML content support
+  - Featured images
+  - Draft/Published status
+  - Social sharing (Facebook, Twitter/X, LinkedIn)
 
 ### Validation
 
