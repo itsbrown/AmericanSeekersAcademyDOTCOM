@@ -1,12 +1,14 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc, sql, gte } from "drizzle-orm";
 import { 
   users, type User, type InsertUser,
   locationSuggestions, type LocationSuggestion, type InsertLocationSuggestion,
   newsletters, type Newsletter, type InsertNewsletter,
   programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest,
   contactInquiries, type ContactInquiry, type InsertContactInquiry,
-  blogPosts, type BlogPost, type InsertBlogPost
+  blogPosts, type BlogPost, type InsertBlogPost,
+  pageViews, type PageView, type InsertPageView,
+  adminSessions, type AdminSession
 } from "@shared/schema";
 
 export interface IStorage {
@@ -37,6 +39,24 @@ export interface IStorage {
   getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
   getPublishedBlogPosts(): Promise<BlogPost[]>;
   getAllBlogPosts(): Promise<BlogPost[]>;
+  
+  // Page view analytics methods
+  createPageView(view: InsertPageView): Promise<PageView>;
+  getPageViews(): Promise<PageView[]>;
+  getPageViewStats(): Promise<{ path: string; count: number }[]>;
+  getReferrerStats(): Promise<{ referrer: string; count: number }[]>;
+  getRecentPageViews(limit: number): Promise<PageView[]>;
+  
+  // Admin session methods
+  createAdminSession(token: string, expiresAt: Date): Promise<AdminSession>;
+  getAdminSession(token: string): Promise<AdminSession | undefined>;
+  deleteAdminSession(token: string): Promise<boolean>;
+  cleanExpiredSessions(): Promise<void>;
+  
+  // Additional data retrieval for admin
+  getContactInquiries(): Promise<ContactInquiry[]>;
+  getProgramInfoRequests(): Promise<ProgramInfoRequest[]>;
+  getNewsletterSubscriptions(): Promise<Newsletter[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -147,6 +167,90 @@ export class DatabaseStorage implements IStorage {
   
   async getAllBlogPosts(): Promise<BlogPost[]> {
     return await db.select().from(blogPosts);
+  }
+  
+  // Page view analytics methods
+  async createPageView(view: InsertPageView): Promise<PageView> {
+    const nowISOString = new Date().toISOString();
+    const [pageView] = await db.insert(pageViews).values({
+      ...view,
+      createdAt: nowISOString
+    }).returning();
+    return pageView;
+  }
+  
+  async getPageViews(): Promise<PageView[]> {
+    return await db.select().from(pageViews).orderBy(desc(pageViews.createdAt));
+  }
+  
+  async getPageViewStats(): Promise<{ path: string; count: number }[]> {
+    const result = await db
+      .select({
+        path: pageViews.path,
+        count: sql<number>`cast(count(*) as int)`,
+      })
+      .from(pageViews)
+      .groupBy(pageViews.path)
+      .orderBy(sql`count(*) desc`);
+    return result;
+  }
+  
+  async getReferrerStats(): Promise<{ referrer: string; count: number }[]> {
+    const result = await db
+      .select({
+        referrer: sql<string>`coalesce(${pageViews.referrer}, 'Direct')`,
+        count: sql<number>`cast(count(*) as int)`,
+      })
+      .from(pageViews)
+      .groupBy(sql`coalesce(${pageViews.referrer}, 'Direct')`)
+      .orderBy(sql`count(*) desc`);
+    return result;
+  }
+  
+  async getRecentPageViews(limit: number): Promise<PageView[]> {
+    return await db.select().from(pageViews).orderBy(desc(pageViews.createdAt)).limit(limit);
+  }
+  
+  // Admin session methods
+  async createAdminSession(token: string, expiresAt: Date): Promise<AdminSession> {
+    const nowISOString = new Date().toISOString();
+    const [session] = await db.insert(adminSessions).values({
+      sessionToken: token,
+      createdAt: nowISOString,
+      expiresAt: expiresAt.toISOString()
+    }).returning();
+    return session;
+  }
+  
+  async getAdminSession(token: string): Promise<AdminSession | undefined> {
+    const [session] = await db.select().from(adminSessions).where(eq(adminSessions.sessionToken, token));
+    if (session && new Date(session.expiresAt) > new Date()) {
+      return session;
+    }
+    return undefined;
+  }
+  
+  async deleteAdminSession(token: string): Promise<boolean> {
+    const result = await db.delete(adminSessions).where(eq(adminSessions.sessionToken, token)).returning();
+    return result.length > 0;
+  }
+  
+  async cleanExpiredSessions(): Promise<void> {
+    const now = new Date().toISOString();
+    await db.delete(adminSessions).where(sql`${adminSessions.expiresAt} < ${now}`);
+  }
+  
+  // Additional data retrieval for admin
+  async getContactInquiries(): Promise<ContactInquiry[]> {
+    return await db.select().from(contactInquiries).orderBy(desc(contactInquiries.createdAt));
+  }
+  
+  async getProgramInfoRequests(): Promise<ProgramInfoRequest[]> {
+    return await db.select().from(programInfoRequests).orderBy(desc(programInfoRequests.createdAt));
+  }
+  
+  async getNewsletterSubscriptions(): Promise<Newsletter[]> {
+    return await db.select().from(newsletters).orderBy(desc(newsletters.createdAt));
   }
 }
 

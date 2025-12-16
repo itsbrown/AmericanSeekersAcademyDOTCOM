@@ -112,3 +112,29 @@ export const updateBlogPostSchema = createInsertSchema(blogPosts).omit({
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
+
+export const pageViews = pgTable("page_views", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  referrer: text("referrer"),
+  userAgent: text("user_agent"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertPageViewSchema = createInsertSchema(pageViews).pick({
+  path: true,
+  referrer: true,
+  userAgent: true,
+});
+
+export type InsertPageView = z.infer<typeof insertPageViewSchema>;
+export type PageView = typeof pageViews.$inferSelect;
+
+export const adminSessions = pgTable("admin_sessions", {
+  id: serial("id").primaryKey(),
+  sessionToken: text("session_token").notNull().unique(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+});
+
+export type AdminSession = typeof adminSessions.$inferSelect;
