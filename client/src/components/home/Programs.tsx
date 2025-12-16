@@ -61,7 +61,7 @@ const Programs = () => {
           <h2 id="programs-heading" className="text-3xl md:text-4xl font-bold text-foreground mb-4">Our Programs</h2>
           <div className="section-divider mb-6"></div>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Discover our age-appropriate classical education programs designed specifically for homeschooling families at every stage of their journey.
+            Discover our age-appropriate classical education programs designed specifically for homeschooling families at every stage of their journey. Classes meet 3 days a week for 10 weeks, 3 times a year.
           </p>
         </div>
         

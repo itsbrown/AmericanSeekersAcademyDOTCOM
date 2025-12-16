@@ -26,7 +26,7 @@ const About = () => {
               Exceptional Classical Education
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              At American Seekers Academy, we strive to provide an exceptional Classical homeschool program that goes beyond traditional co-ops using trained professionals and vetted curricula from highly acclaimed sources.
+              At American Seekers Academy, we strive to provide an exceptional Classical homeschool program that goes beyond traditional co-ops using trained professionals and vetted curricula from highly acclaimed sources. Classes meet 3 days a week for 10 weeks, 3 times a year.
             </p>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
               Our members are proud of their American heritage and hope to instill in children a love of country, methods to self govern and a desire to preserve the illuminated entrepreneurial spirit for generations to come.
