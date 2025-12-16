@@ -30,13 +30,13 @@ const Hero = () => {
           <div className="max-w-2xl">
             {/* Tagline */}
             <p className="text-white/90 text-lg md:text-xl font-medium mb-4 tracking-wide" data-testid="hero-tagline">
-              Making homeschooling a success for the whole family
+              Making homeschooling a success for the whole family.
             </p>
             
             {/* Main Heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Classical Education.{" "}
-              <span className="text-[hsl(38,75%,55%)]">American Values.</span>
+              Classical Education{" "}
+              <span className="text-[hsl(38,75%,55%)]">American Values</span>
             </h1>
             
             {/* Description */}
