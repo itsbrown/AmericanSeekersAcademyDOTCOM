@@ -170,10 +170,22 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Page view analytics methods
+  private sanitizeReferrer(referrer: string | null | undefined): string | null {
+    if (!referrer) return null;
+    try {
+      const url = new URL(referrer);
+      return url.hostname || null;
+    } catch {
+      return null;
+    }
+  }
+
   async createPageView(view: InsertPageView): Promise<PageView> {
     const nowISOString = new Date().toISOString();
     const [pageView] = await db.insert(pageViews).values({
-      ...view,
+      path: view.path,
+      referrer: this.sanitizeReferrer(view.referrer),
+      userAgent: null,
       createdAt: nowISOString
     }).returning();
     return pageView;

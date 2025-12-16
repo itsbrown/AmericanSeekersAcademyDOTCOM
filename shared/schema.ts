@@ -125,6 +125,9 @@ export const insertPageViewSchema = createInsertSchema(pageViews).pick({
   path: true,
   referrer: true,
   userAgent: true,
+}).extend({
+  userAgent: z.string().nullable().optional(),
+  referrer: z.string().nullable().optional(),
 });
 
 export type InsertPageView = z.infer<typeof insertPageViewSchema>;

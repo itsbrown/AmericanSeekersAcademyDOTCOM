@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({ success: true, suggestion });
     } catch (error) {
-      if (error instanceof Error) {
+      if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
       } else {
@@ -313,13 +313,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscription = await storage.subscribeToNewsletter(validatedData);
       res.status(201).json({ success: true, subscription });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === "Email already subscribed") {
-          res.status(400).json({ success: false, message: error.message });
-        } else {
-          const validationError = fromZodError(error);
-          res.status(400).json({ success: false, message: validationError.message });
-        }
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else if (error instanceof Error && error.message === "Email already subscribed") {
+        res.status(400).json({ success: false, message: error.message });
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }
@@ -349,13 +347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ success: true, request });
     } catch (error) {
       console.error("Program info request error:", error);
-      if (error instanceof Error) {
-        if (error.message.includes("Brevo")) {
-          res.status(500).json({ success: false, message: "Failed to send email. Please try again." });
-        } else {
-          const validationError = fromZodError(error);
-          res.status(400).json({ success: false, message: validationError.message });
-        }
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else if (error instanceof Error && error.message.includes("Brevo")) {
+        res.status(500).json({ success: false, message: "Failed to send email. Please try again." });
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }
@@ -545,13 +541,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin logout
+  // Admin logout (requires authentication to prevent session purge attacks)
   app.post("/api/admin/logout", async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      await storage.deleteAdminSession(token);
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
     }
+    
+    const token = authHeader.substring(7);
+    const session = await storage.getAdminSession(token);
+    
+    if (!session) {
+      res.status(401).json({ success: false, message: "Invalid session" });
+      return;
+    }
+    
+    await storage.deleteAdminSession(token);
     res.json({ success: true });
   });
 

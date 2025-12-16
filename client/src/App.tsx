@@ -7,8 +7,10 @@ import ProgramDetail from "@/pages/ProgramDetail";
 import BlogList from "@/pages/BlogList";
 import BlogPost from "@/pages/BlogPost";
 import BlogAdmin from "@/pages/BlogAdmin";
+import AdminDashboard from "@/pages/AdminDashboard";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import AnalyticsTracker from "@/components/common/AnalyticsTracker";
 
 function Router() {
   return (
@@ -18,6 +20,7 @@ function Router() {
       <Route path="/blog" component={BlogList} />
       <Route path="/blog/admin" component={BlogAdmin} />
       <Route path="/blog/:slug" component={BlogPost} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -26,6 +29,7 @@ function Router() {
 function App() {
   return (
     <TooltipProvider>
+      <AnalyticsTracker />
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-grow">
