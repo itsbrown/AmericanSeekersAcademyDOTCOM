@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogList() {
@@ -12,8 +13,37 @@ export default function BlogList() {
 
   const posts = data?.posts || [];
 
+  useEffect(() => {
+    document.title = "Blog | American Seekers Academy - Classical Education Insights";
+    
+    const updateOrCreateMeta = (selector: string, content: string, isProperty = false) => {
+      let meta = document.querySelector(selector) as HTMLMetaElement | null;
+      if (meta) {
+        meta.setAttribute("content", content);
+      } else {
+        meta = document.createElement("meta");
+        if (isProperty) {
+          const propMatch = selector.match(/property="([^"]+)"/);
+          if (propMatch) meta.setAttribute("property", propMatch[1]);
+        } else {
+          const nameMatch = selector.match(/name="([^"]+)"/);
+          if (nameMatch) meta.setAttribute("name", nameMatch[1]);
+        }
+        meta.setAttribute("content", content);
+        document.head.appendChild(meta);
+      }
+    };
+
+    const descriptionContent = "Discover insights, tips, and stories about classical education, homeschooling, and raising children with civic virtue from American Seekers Academy.";
+    
+    updateOrCreateMeta('meta[name="description"]', descriptionContent);
+    updateOrCreateMeta('meta[property="og:title"]', "Blog | American Seekers Academy", true);
+    updateOrCreateMeta('meta[property="og:description"]', descriptionContent, true);
+    updateOrCreateMeta('meta[property="og:type"]', "website", true);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[hsl(40,33%,98%)]">
+    <div className="min-h-screen bg-[hsl(40,33%,98%)] pt-20">
       <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] text-white py-16">
         <div className="container mx-auto px-4">
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-center">
@@ -58,15 +88,19 @@ export default function BlogList() {
                   className="card-elegant cursor-pointer h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                   data-testid={`blog-card-${post.id}`}
                 >
-                  {post.featuredImage && (
-                    <div className="aspect-video overflow-hidden rounded-t-lg">
+                  <div className="aspect-video overflow-hidden rounded-t-lg bg-gradient-to-br from-[#1e3a5f] to-[#2a4a73]">
+                    {post.featuredImage ? (
                       <img 
                         src={post.featuredImage} 
                         alt={post.title}
                         className="w-full h-full object-cover"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="w-16 h-16 text-white/30" />
+                      </div>
+                    )}
+                  </div>
                   <CardHeader>
                     <CardTitle className="font-serif text-xl text-[#1e3a5f] line-clamp-2">
                       {post.title}

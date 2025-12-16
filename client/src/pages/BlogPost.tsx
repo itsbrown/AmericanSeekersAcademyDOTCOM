@@ -4,6 +4,7 @@ import { Calendar, ArrowLeft, Share2 } from "lucide-react";
 import { SiFacebook, SiX, SiLinkedin } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 import type { BlogPost as BlogPostType } from "@shared/schema";
 
 export default function BlogPost() {
@@ -20,6 +21,43 @@ export default function BlogPost() {
   });
 
   const post = data?.post;
+
+  useEffect(() => {
+    if (post) {
+      document.title = `${post.title} | American Seekers Academy Blog`;
+      
+      const updateOrCreateMeta = (selector: string, attr: string, content: string) => {
+        let meta = document.querySelector(selector);
+        if (meta) {
+          meta.setAttribute(attr === "property" ? "content" : attr, content);
+        } else {
+          meta = document.createElement("meta");
+          if (selector.includes("property=")) {
+            meta.setAttribute("property", selector.match(/property="([^"]+)"/)?.[1] || "");
+          } else {
+            meta.setAttribute("name", selector.match(/name="([^"]+)"/)?.[1] || "");
+          }
+          meta.setAttribute("content", content);
+          document.head.appendChild(meta);
+        }
+      };
+
+      updateOrCreateMeta('meta[name="description"]', "content", post.excerpt);
+      updateOrCreateMeta('meta[property="og:title"]', "content", post.title);
+      updateOrCreateMeta('meta[property="og:description"]', "content", post.excerpt);
+      updateOrCreateMeta('meta[property="og:type"]', "content", "article");
+      updateOrCreateMeta('meta[property="og:url"]', "content", window.location.href);
+      if (post.featuredImage) {
+        updateOrCreateMeta('meta[property="og:image"]', "content", post.featuredImage);
+      } else {
+        const existingOgImage = document.querySelector('meta[property="og:image"]');
+        if (existingOgImage) existingOgImage.remove();
+      }
+      updateOrCreateMeta('meta[name="twitter:card"]', "content", post.featuredImage ? "summary_large_image" : "summary");
+      updateOrCreateMeta('meta[name="twitter:title"]', "content", post.title);
+      updateOrCreateMeta('meta[name="twitter:description"]', "content", post.excerpt);
+    }
+  }, [post]);
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareTitle = post?.title || "";
@@ -47,7 +85,7 @@ export default function BlogPost() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(40,33%,98%)]">
+    <div className="min-h-screen bg-[hsl(40,33%,98%)] pt-20">
       {isLoading ? (
         <div className="container mx-auto px-4 py-12 max-w-4xl">
           <Skeleton className="h-8 w-32 mb-8" />
