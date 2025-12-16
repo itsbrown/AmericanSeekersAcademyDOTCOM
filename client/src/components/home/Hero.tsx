@@ -26,7 +26,7 @@ const Hero = () => {
       
       {/* Content Overlay */}
       <div className="relative z-10 w-full pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pb-28 md:py-24 md:pb-24">
           <div className="max-w-2xl">
             {/* Tagline */}
             <p className="text-white/90 text-lg md:text-xl font-medium mb-4 tracking-wide" data-testid="hero-tagline">

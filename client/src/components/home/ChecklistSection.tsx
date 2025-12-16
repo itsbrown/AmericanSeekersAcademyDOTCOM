@@ -47,8 +47,8 @@ const ChecklistSection = () => {
                 className="flex items-center gap-3"
                 data-testid={`checklist-item-${item.id}`}
               >
-                <CheckSquare className="h-7 w-7 text-[hsl(38,75%,55%)] flex-shrink-0" strokeWidth={2.5} />
-                <span className="text-white text-xl md:text-2xl font-semibold">
+                <CheckSquare className="h-7 w-7 text-white flex-shrink-0" strokeWidth={2.5} />
+                <span className="text-[hsl(38,75%,55%)] text-xl md:text-2xl font-semibold">
                   {item.text}
                 </span>
               </div>
