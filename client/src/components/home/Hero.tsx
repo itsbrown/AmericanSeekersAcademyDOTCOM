@@ -52,7 +52,7 @@ const Hero = () => {
               </div>
               <div className="flex items-center gap-2" data-testid="hero-stat-education">
                 <BookOpen className="h-5 w-5 text-[hsl(38,75%,55%)]" />
-                <span>Classical Curriculum</span>
+                <span>3 days per week</span>
               </div>
             </div>
             
