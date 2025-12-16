@@ -67,13 +67,13 @@ const Header = () => {
       {/* Main Header Bar - White House Style */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo - Left Side */}
-          <div className="flex-shrink-0">
+          {/* Logo - Left Side with Overlap Effect */}
+          <div className="flex-shrink-0 relative z-20">
             <Link href="/" className="flex items-center" aria-label="American Seekers Academy Home">
               <img 
                 src={logoImage} 
                 alt="American Seekers Academy" 
-                className="h-10 md:h-12 w-auto" 
+                className="h-16 md:h-24 w-auto -mb-4 md:-mb-8" 
               />
             </Link>
           </div>
