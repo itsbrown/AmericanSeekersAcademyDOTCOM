@@ -1,4 +1,5 @@
 import Hero from "@/components/home/Hero";
+import ChecklistSection from "@/components/home/ChecklistSection";
 import VideoSection from "@/components/home/VideoSection";
 import Philosophy from "@/components/home/Philosophy";
 import Programs from "@/components/home/Programs";
@@ -38,6 +39,7 @@ const Home = () => {
   return (
     <>
       <Hero />
+      <ChecklistSection />
       <VideoSection />
       <Philosophy />
       <Programs />
