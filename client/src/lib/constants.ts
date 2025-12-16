@@ -290,7 +290,7 @@ export const faqs = [
   },
   {
     question: "How does ASA work with IHIP requirements?",
-    answer: "All our programs are designed to be IHIP compliant, covering required subjects with appropriate instructional hours (900-990 hours annually). We provide curriculum guidelines that parents can use for quarterly reports, but parents maintain responsibility for their child's education and documentation."
+    answer: "All our programs are designed to be IHIP compliant, covering required subjects with appropriate instructional hours (180 - 450 hours annually). We provide curriculum guidelines that parents can use for quarterly reports, but parents maintain responsibility for their child's education and documentation."
   },
   {
     question: "What is the classical model of education?",
