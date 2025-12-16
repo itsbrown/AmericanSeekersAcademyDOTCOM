@@ -5,7 +5,8 @@ import {
   locationSuggestions, type LocationSuggestion, type InsertLocationSuggestion,
   newsletters, type Newsletter, type InsertNewsletter,
   programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest,
-  contactInquiries, type ContactInquiry, type InsertContactInquiry
+  contactInquiries, type ContactInquiry, type InsertContactInquiry,
+  blogPosts, type BlogPost, type InsertBlogPost
 } from "@shared/schema";
 
 export interface IStorage {
@@ -27,6 +28,15 @@ export interface IStorage {
   
   // Contact inquiry methods
   createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry>;
+  
+  // Blog post methods
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
+  deleteBlogPost(id: number): Promise<boolean>;
+  getBlogPost(id: number): Promise<BlogPost | undefined>;
+  getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
+  getPublishedBlogPosts(): Promise<BlogPost[]>;
+  getAllBlogPosts(): Promise<BlogPost[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -99,6 +109,44 @@ export class DatabaseStorage implements IStorage {
       createdAt: nowISOString
     }).returning();
     return contactInquiry;
+  }
+  
+  // Blog post methods
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const nowISOString = new Date().toISOString();
+    const [blogPost] = await db.insert(blogPosts).values({
+      ...post,
+      createdAt: nowISOString
+    }).returning();
+    return blogPost;
+  }
+  
+  async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
+    const [blogPost] = await db.update(blogPosts).set(post).where(eq(blogPosts.id, id)).returning();
+    return blogPost;
+  }
+  
+  async deleteBlogPost(id: number): Promise<boolean> {
+    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id)).returning();
+    return result.length > 0;
+  }
+  
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post;
+  }
+  
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    return post;
+  }
+  
+  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts).where(eq(blogPosts.published, true));
+  }
+  
+  async getAllBlogPosts(): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts);
   }
 }
 

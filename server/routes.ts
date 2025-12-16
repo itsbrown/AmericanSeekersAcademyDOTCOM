@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -392,6 +392,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }
+    }
+  });
+
+  // Blog API routes
+  app.get("/api/blog", async (_req: Request, res: Response) => {
+    try {
+      const posts = await storage.getPublishedBlogPosts();
+      res.json({ success: true, posts });
+    } catch (error) {
+      console.error("Failed to get blog posts:", error);
+      res.status(500).json({ success: false, message: "Failed to retrieve blog posts" });
+    }
+  });
+
+  app.get("/api/blog/all", async (_req: Request, res: Response) => {
+    try {
+      const posts = await storage.getAllBlogPosts();
+      res.json({ success: true, posts });
+    } catch (error) {
+      console.error("Failed to get all blog posts:", error);
+      res.status(500).json({ success: false, message: "Failed to retrieve blog posts" });
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req: Request, res: Response) => {
+    try {
+      const post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post) {
+        res.status(404).json({ success: false, message: "Blog post not found" });
+        return;
+      }
+      res.json({ success: true, post });
+    } catch (error) {
+      console.error("Failed to get blog post:", error);
+      res.status(500).json({ success: false, message: "Failed to retrieve blog post" });
+    }
+  });
+
+  app.post("/api/blog", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertBlogPostSchema.parse(req.body);
+      const post = await storage.createBlogPost(validatedData);
+      res.status(201).json({ success: true, post });
+    } catch (error) {
+      console.error("Failed to create blog post:", error);
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to create blog post" });
+      }
+    }
+  });
+
+  app.put("/api/blog/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const post = await storage.updateBlogPost(id, req.body);
+      if (!post) {
+        res.status(404).json({ success: false, message: "Blog post not found" });
+        return;
+      }
+      res.json({ success: true, post });
+    } catch (error) {
+      console.error("Failed to update blog post:", error);
+      res.status(500).json({ success: false, message: "Failed to update blog post" });
+    }
+  });
+
+  app.delete("/api/blog/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteBlogPost(id);
+      if (!deleted) {
+        res.status(404).json({ success: false, message: "Blog post not found" });
+        return;
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete blog post:", error);
+      res.status(500).json({ success: false, message: "Failed to delete blog post" });
     }
   });
 
