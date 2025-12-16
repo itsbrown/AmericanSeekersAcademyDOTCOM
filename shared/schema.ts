@@ -71,6 +71,7 @@ export const contactInquiries = pgTable("contact_inquiries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  phone: text("phone").notNull(),
   message: text("message").notNull(),
   createdAt: text("created_at").notNull(),
 });
@@ -78,6 +79,7 @@ export const contactInquiries = pgTable("contact_inquiries", {
 export const insertContactInquirySchema = createInsertSchema(contactInquiries).pick({
   name: true,
   email: true,
+  phone: true,
   message: true,
 });
 

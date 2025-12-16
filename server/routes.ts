@@ -96,7 +96,7 @@ async function addContactToBrevoList(email: string, name: string, listId: number
   }
 }
 
-async function sendContactInquiryNotification(inquiry: { name: string; email: string; message: string }) {
+async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
     console.log("BREVO_API_KEY not configured - skipping contact inquiry notification");
@@ -114,6 +114,7 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
             <h2 style="color: #1e3a5f; margin-top: 0;">Contact Details</h2>
             <p><strong>Name:</strong> ${inquiry.name}</p>
             <p><strong>Email:</strong> <a href="mailto:${inquiry.email}">${inquiry.email}</a></p>
+            <p><strong>Phone:</strong> <a href="tel:${inquiry.phone}">${inquiry.phone}</a></p>
             <p><strong>Message:</strong></p>
             <p style="background-color: white; padding: 15px; border-radius: 4px; border-left: 4px solid #c4a052;">${inquiry.message.replace(/\n/g, '<br>')}</p>
           </div>
