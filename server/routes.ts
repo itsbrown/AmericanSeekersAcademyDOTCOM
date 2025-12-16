@@ -1,8 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
+import crypto from "crypto";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -479,6 +480,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete blog post:", error);
       res.status(500).json({ success: false, message: "Failed to delete blog post" });
+    }
+  });
+
+  // Analytics - Track page view (public endpoint)
+  app.post("/api/analytics/pageview", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertPageViewSchema.parse(req.body);
+      await storage.createPageView(validatedData);
+      res.status(201).json({ success: true });
+    } catch (error) {
+      res.status(400).json({ success: false });
+    }
+  });
+
+  // Admin authentication middleware
+  const requireAdmin = async (req: Request, res: Response, next: () => void) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    
+    const token = authHeader.substring(7);
+    const session = await storage.getAdminSession(token);
+    
+    if (!session) {
+      res.status(401).json({ success: false, message: "Invalid or expired session" });
+      return;
+    }
+    
+    next();
+  };
+
+  // Admin login
+  app.post("/api/admin/login", async (req: Request, res: Response) => {
+    try {
+      const { password } = req.body;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      
+      if (!adminPassword) {
+        res.status(500).json({ success: false, message: "Admin password not configured" });
+        return;
+      }
+      
+      if (password !== adminPassword) {
+        res.status(401).json({ success: false, message: "Invalid password" });
+        return;
+      }
+      
+      // Create a session token
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await storage.createAdminSession(token, expiresAt);
+      
+      // Clean up old expired sessions
+      await storage.cleanExpiredSessions();
+      
+      res.json({ success: true, token, expiresAt: expiresAt.toISOString() });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ success: false, message: "Login failed" });
+    }
+  });
+
+  // Admin logout
+  app.post("/api/admin/logout", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      await storage.deleteAdminSession(token);
+    }
+    res.json({ success: true });
+  });
+
+  // Verify admin session
+  app.get("/api/admin/verify", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.json({ success: false, authenticated: false });
+      return;
+    }
+    
+    const token = authHeader.substring(7);
+    const session = await storage.getAdminSession(token);
+    
+    res.json({ success: true, authenticated: !!session });
+  });
+
+  // Admin data endpoints (protected)
+  app.get("/api/admin/contacts", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const inquiries = await storage.getContactInquiries();
+      res.json({ success: true, inquiries });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve contact inquiries" });
+    }
+  });
+
+  app.get("/api/admin/locations", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const suggestions = await storage.getLocationSuggestions();
+      res.json({ success: true, suggestions });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve location suggestions" });
+    }
+  });
+
+  app.get("/api/admin/programs", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const requests = await storage.getProgramInfoRequests();
+      res.json({ success: true, requests });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve program info requests" });
+    }
+  });
+
+  app.get("/api/admin/newsletters", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const subscriptions = await storage.getNewsletterSubscriptions();
+      res.json({ success: true, subscriptions });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve newsletter subscriptions" });
+    }
+  });
+
+  app.get("/api/admin/analytics", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const [pageStats, referrerStats, recentViews] = await Promise.all([
+        storage.getPageViewStats(),
+        storage.getReferrerStats(),
+        storage.getRecentPageViews(50)
+      ]);
+      res.json({ success: true, pageStats, referrerStats, recentViews });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve analytics" });
+    }
+  });
+
+  app.get("/api/admin/stats", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const [contacts, locations, programs, newsletters, pageViews] = await Promise.all([
+        storage.getContactInquiries(),
+        storage.getLocationSuggestions(),
+        storage.getProgramInfoRequests(),
+        storage.getNewsletterSubscriptions(),
+        storage.getPageViews()
+      ]);
+      
+      res.json({
+        success: true,
+        stats: {
+          totalContacts: contacts.length,
+          totalLocations: locations.length,
+          totalPrograms: programs.length,
+          totalNewsletters: newsletters.length,
+          totalPageViews: pageViews.length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve stats" });
     }
   });
 
