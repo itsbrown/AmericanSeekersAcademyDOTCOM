@@ -286,7 +286,7 @@ export const curriculumTabs = [
 export const faqs = [
   {
     question: "Is American Seekers Academy a school?",
-    answer: "No, American Seekers Academy is a drop-off homeschool co-op, not a public, government, or private school. We operate under a privately operated homeschool cooperative association, serving as a complementary resource for homeschooling families. The children are with us less than 51% of the time, well within the boundaries of NYS Homeschool Instruction Regulations."
+    answer: "No, American Seekers Academy is a drop-off homeschool co-op, not a public, government, or private school. We operate under a Private Membership Association, serving as a complementary resource for homeschooling families. The children are with us less than 51% of the time, well within the boundaries of state regulations."
   },
   {
     question: "How does ASA work with IHIP requirements?",
