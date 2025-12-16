@@ -52,6 +52,7 @@ export const programInfoRequests = pgTable("program_info_requests", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  phone: text("phone").notNull(),
   programSlug: text("program_slug").notNull(),
   programName: text("program_name").notNull(),
   createdAt: text("created_at").notNull(),
@@ -60,6 +61,7 @@ export const programInfoRequests = pgTable("program_info_requests", {
 export const insertProgramInfoRequestSchema = createInsertSchema(programInfoRequests).pick({
   name: true,
   email: true,
+  phone: true,
   programSlug: true,
   programName: true,
 });

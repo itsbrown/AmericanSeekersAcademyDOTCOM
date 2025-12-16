@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { X, Mail, User, Loader2, CheckCircle } from "lucide-react";
+import { X, Mail, User, Loader2, CheckCircle, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 const requestInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
 });
 
 type RequestInfoForm = z.infer<typeof requestInfoSchema>;
@@ -33,6 +34,7 @@ export default function RequestInfoModal({ isOpen, onClose, programSlug, program
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
     },
   });
 
@@ -134,6 +136,23 @@ export default function RequestInfoModal({ isOpen, onClose, programSlug, program
                 />
                 {form.formState.errors.email && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
+                  <Phone className="h-4 w-4" />
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  {...form.register("phone")}
+                  data-testid="input-phone"
+                />
+                {form.formState.errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.phone.message}</p>
                 )}
               </div>
 
