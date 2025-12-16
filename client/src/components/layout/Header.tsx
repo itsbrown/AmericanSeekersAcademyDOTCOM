@@ -47,12 +47,13 @@ const Header = () => {
   };
 
   const navLinks = [
-    { href: "#home", label: "Home", testId: "nav-home" },
-    { href: "#programs", label: "Programs", testId: "nav-programs" },
-    { href: "#curriculum", label: "Curriculum", testId: "nav-curriculum" },
-    { href: "#about", label: "About", testId: "nav-about" },
-    { href: "#locations", label: "Locations", testId: "nav-locations" },
-    { href: "#faq", label: "FAQ", testId: "nav-faq" },
+    { href: "#home", label: "Home", testId: "nav-home", isSection: true },
+    { href: "#programs", label: "Programs", testId: "nav-programs", isSection: true },
+    { href: "#curriculum", label: "Curriculum", testId: "nav-curriculum", isSection: true },
+    { href: "#about", label: "About", testId: "nav-about", isSection: true },
+    { href: "#locations", label: "Locations", testId: "nav-locations", isSection: true },
+    { href: "#faq", label: "FAQ", testId: "nav-faq", isSection: true },
+    { href: "/blog", label: "Blog", testId: "nav-blog", isSection: false },
   ];
 
   return (
@@ -83,14 +84,24 @@ const Header = () => {
             <ul className="flex items-center space-x-1">
               {navLinks.map((link) => (
                 <li key={link.href}>
-                  <a 
-                    href={link.href} 
-                    onClick={(e) => scrollToSection(e, link.href)} 
-                    className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
-                    data-testid={link.testId}
-                  >
-                    {link.label}
-                  </a>
+                  {link.isSection ? (
+                    <a 
+                      href={link.href} 
+                      onClick={(e) => scrollToSection(e, link.href)} 
+                      className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                      data-testid={link.testId}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link 
+                      href={link.href}
+                      className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                      data-testid={link.testId}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
               <li>
@@ -147,15 +158,27 @@ const Header = () => {
       >
         <div className="px-4 pt-2 pb-4 space-y-1 bg-[#1e3a5f] border-t border-white/10">
           {navLinks.map((link) => (
-            <a 
-              key={link.href}
-              href={link.href} 
-              onClick={(e) => scrollToSection(e, link.href)} 
-              className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200"
-              data-testid={`mobile-${link.testId}`}
-            >
-              {link.label}
-            </a>
+            link.isSection ? (
+              <a 
+                key={link.href}
+                href={link.href} 
+                onClick={(e) => scrollToSection(e, link.href)} 
+                className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200"
+                data-testid={`mobile-${link.testId}`}
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link 
+                key={link.href}
+                href={link.href}
+                onClick={closeMenu}
+                className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200"
+                data-testid={`mobile-${link.testId}`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
           <button 
             onClick={() => { closeMenu(); setIsContactModalOpen(true); }} 
