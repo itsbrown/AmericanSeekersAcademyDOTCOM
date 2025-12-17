@@ -62,7 +62,7 @@ export const programs: Program[] = [
   },
   {
     slug: "yankee-doodle",
-    name: "Yankee Doodle",
+    name: "Yankee Doodles",
     ageRange: "Ages 4-5",
     grades: "PreK-K",
     description: "Builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning and civic virtue.",
@@ -82,7 +82,7 @@ export const programs: Program[] = [
     ],
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-    longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Yankee Doodle class (ages 4–5, PreK–K) builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning and civic virtue. The program supports homeschooling families by providing a structured yet flexible curriculum. Using Literacy Essentials, Primary Phonics, Dimensions Math, and resources like Tuttle Twins and Our America (Abeka), students master short vowel sounds, decode CVC words, count to 10, perform basic addition, and understand American symbols and figures.",
+    longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Yankee Doodles class (ages 4–5, PreK–K) builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning and civic virtue. The program supports homeschooling families by providing a structured yet flexible curriculum. Using Literacy Essentials, Primary Phonics, Dimensions Math, and resources like Tuttle Twins and Our America (Abeka), students master short vowel sounds, decode CVC words, count to 10, perform basic addition, and understand American symbols and figures.",
     pricing: { halfDay: 900, fullDay: 1300 }
   },
   {
@@ -319,12 +319,6 @@ export const testimonials = [
     name: "Andréa Evans",
     role: "Parent of five children",
     content: "I am an actual parent who sends FIVE children to this school. Not only is the school and learning excellent but the teachers, other community members and families involved are wonderful. Our family is so grateful for this school and community. Our children have thrived here educationally and have felt supported. I cannot recommend ASA enough.",
-    rating: 5
-  },
-  {
-    name: "Mike Mastrodonato",
-    role: "ASA Parent",
-    content: "Great program with kind people who actually want to see kids become well rounded people and responsible citizens. I highly recommend for those who are tired of mainstream education for their children.",
     rating: 5
   },
   {

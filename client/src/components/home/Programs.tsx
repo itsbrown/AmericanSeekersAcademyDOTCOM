@@ -18,7 +18,7 @@ const programsData = [
   },
   {
     slug: "yankee-doodle",
-    name: "Yankee Doodle",
+    name: "Yankee Doodles",
     ageRange: "Ages 4-5 (PreK-K)",
     description: "Builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning.",
     imageUrl: writingKid,
