@@ -206,9 +206,11 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
     throw new Error("BREVO_API_KEY not configured");
   }
 
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : 'http://localhost:5000';
+  const baseUrl = process.env.NODE_ENV === 'production'
+    ? 'https://americanseekersacademy.com'
+    : process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+      : 'http://localhost:5000';
 
   const emailContent = `
     <html>
