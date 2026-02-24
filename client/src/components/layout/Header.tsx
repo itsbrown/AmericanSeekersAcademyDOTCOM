@@ -115,6 +115,17 @@ const Header = () => {
               </li>
               <li>
                 <a 
+                  href="https://accounts.americanseekersacademy.com/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                  data-testid="nav-login"
+                >
+                  Login
+                </a>
+              </li>
+              <li>
+                <a 
                   href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -187,6 +198,16 @@ const Header = () => {
           >
             Contact
           </button>
+          <a 
+            href="https://accounts.americanseekersacademy.com/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="mt-2 block w-full bg-white/10 hover:bg-white/20 text-white border border-white/30 text-center py-3 font-semibold rounded cursor-pointer transition-colors duration-200"
+            data-testid="mobile-nav-login"
+          >
+            Login
+          </a>
           <a 
             href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
             target="_blank"

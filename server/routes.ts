@@ -266,6 +266,11 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // External redirects
+  app.get("/login", (_req: Request, res: Response) => {
+    res.redirect(301, "https://accounts.americanseekersacademy.com/login");
+  });
+
   // API routes for location suggestions
   app.post("/api/location-suggestions", async (req: Request, res: Response) => {
     try {

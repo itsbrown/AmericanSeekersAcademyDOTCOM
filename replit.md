@@ -156,3 +156,19 @@ The blog system includes:
 - `react-day-picker`: Date picker component
 - `vaul`: Drawer component
 - `recharts`: Charting library
+
+## Redirects
+
+Server-side redirects are defined in `server/routes.ts` at the top of `registerRoutes()`.
+
+| Path | Destination | Type | Notes |
+|------|-------------|------|-------|
+| `/login` | `https://accounts.americanseekersacademy.com/login` | 301 (permanent) | External enrollment portal login |
+
+### Navigation Links (External)
+These links appear in the site header (both desktop and mobile) and open in a new tab:
+
+| Button | Destination |
+|--------|-------------|
+| Login | `https://accounts.americanseekersacademy.com/login` |
+| Register | `https://accounts.americanseekersacademy.com/register/2OSQEAY3` |
