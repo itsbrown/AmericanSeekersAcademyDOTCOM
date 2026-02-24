@@ -10,6 +10,7 @@ import About from "@/components/home/About";
 import Locations from "@/components/home/Locations";
 import FAQ from "@/components/home/FAQ";
 import CTA from "@/components/home/CTA";
+import SessionCalendar from "@/components/home/SessionCalendar";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
@@ -43,6 +44,7 @@ const Home = () => {
       <VideoSection />
       <Philosophy />
       <Programs />
+      <SessionCalendar />
       <Testimonials />
       <Curriculum />
       <Comparison />
