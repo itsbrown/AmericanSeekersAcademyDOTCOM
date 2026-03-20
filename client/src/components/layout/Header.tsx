@@ -106,7 +106,7 @@ const Header = () => {
               ))}
               <li>
                 <a
-                  href="https://givebutter.com/HkmAXnl6"
+                  href="https://givebutter.com/0Djnsl"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200"
@@ -203,7 +203,7 @@ const Header = () => {
             )
           ))}
           <a
-            href="https://givebutter.com/HkmAXnl6"
+            href="https://givebutter.com/0Djnsl"
             target="_blank"
             rel="noopener noreferrer"
             onClick={closeMenu}
