@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { insertAnnouncementSchema, type InsertAnnouncement, type Announcement } from "@shared/schema";
 import type { ContactInquiry, LocationSuggestion, ProgramInfoRequest, Newsletter, PageView } from "@shared/schema";
 
 const AUTH_TOKEN_KEY = "admin_token";
@@ -273,6 +280,10 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
             <TabsTrigger value="analytics" className="flex items-center gap-2" data-testid="tab-analytics">
               <BarChart3 className="w-4 h-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2" data-testid="tab-announcements">
+              <Megaphone className="w-4 h-4" />
+              Announcements
             </TabsTrigger>
           </TabsList>
 
@@ -548,8 +559,484 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
               </Card>
             </div>
           </TabsContent>
+
+          <TabsContent value="announcements">
+            <AnnouncementsTab getAuthHeaders={getAuthHeaders} onLogout={onLogout} />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => HeadersInit; onLogout: () => void }) {
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const handleUnauthorized = (res: Response) => {
+    if (res.status === 401) {
+      clearStoredToken();
+      onLogout();
+      throw new Error("Session expired");
+    }
+    if (!res.ok) throw new Error("Request failed");
+    return res.json();
+  };
+
+  const announcementsQuery = useQuery<{ success: boolean; announcements: Announcement[] }>({
+    queryKey: ["/api/admin/announcements"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/announcements", { headers: getAuthHeaders() });
+      return handleUnauthorized(res);
+    },
+    retry: false,
+  });
+
+  const createForm = useForm<InsertAnnouncement>({
+    resolver: zodResolver(insertAnnouncementSchema),
+    defaultValues: {
+      title: "",
+      content: "",
+      type: "general",
+      published: false,
+      pinned: false,
+    },
+  });
+
+  const editForm = useForm<InsertAnnouncement>({
+    resolver: zodResolver(insertAnnouncementSchema),
+    defaultValues: {
+      title: "",
+      content: "",
+      type: "general",
+      published: false,
+      pinned: false,
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: InsertAnnouncement) => {
+      const res = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      createForm.reset({ title: "", content: "", type: "general", published: false, pinned: false });
+      toast({ title: "Announcement created" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create announcement", variant: "destructive" });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: InsertAnnouncement }) => {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      setEditingId(null);
+      toast({ title: "Announcement updated" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update announcement", variant: "destructive" });
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: number; field: "published" | "pinned"; value: boolean }) => {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to update announcement", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement deleted" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete announcement", variant: "destructive" });
+    },
+  });
+
+  const startEdit = (a: Announcement) => {
+    setEditingId(a.id);
+    editForm.reset({
+      title: a.title,
+      content: a.content,
+      type: a.type as InsertAnnouncement["type"],
+      published: a.published,
+      pinned: a.pinned,
+    });
+  };
+
+  const typeBadgeVariant = (type: string): "default" | "secondary" | "outline" => {
+    switch (type) {
+      case "new-class": return "default";
+      case "update": return "secondary";
+      default: return "outline";
+    }
+  };
+
+  const typeLabel = (type: string) => {
+    switch (type) {
+      case "new-class": return "New Class";
+      case "update": return "Update";
+      default: return "General";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="w-5 h-5" />
+            New Announcement
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...createForm}>
+            <form onSubmit={createForm.handleSubmit((data) => createMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={createForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Announcement title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Announcement content" rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={createForm.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="new-class">New Class</SelectItem>
+                          <SelectItem value="update">Update</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="published"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Published</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={(v) => field.onChange(v === "true")}
+                          defaultValue={String(field.value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="pinned"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Pinned</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={(v) => field.onChange(v === "true")}
+                          defaultValue={String(field.value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="submit" className="btn-primary" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Creating..." : "Create Announcement"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="w-5 h-5" />
+            All Announcements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {announcementsQuery.isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (announcementsQuery.data?.announcements?.length ?? 0) === 0 ? (
+            <p className="text-gray-500 text-center py-8">No announcements yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {announcementsQuery.data?.announcements?.map((a) =>
+                editingId === a.id ? (
+                  <Card key={a.id} className="border-[#1e3a5f]">
+                    <CardContent className="pt-4">
+                      <Form {...editForm}>
+                        <form
+                          onSubmit={editForm.handleSubmit((data) => editMutation.mutate({ id: a.id, data }))}
+                          className="space-y-3"
+                        >
+                          <FormField
+                            control={editForm.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Title</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editForm.control}
+                            name="content"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Content</FormLabel>
+                                <FormControl>
+                                  <Textarea rows={3} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid grid-cols-3 gap-3">
+                            <FormField
+                              control={editForm.control}
+                              name="type"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Type</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="general">General</SelectItem>
+                                      <SelectItem value="new-class">New Class</SelectItem>
+                                      <SelectItem value="update">Update</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={editForm.control}
+                              name="published"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Published</FormLabel>
+                                  <Select
+                                    onValueChange={(v) => field.onChange(v === "true")}
+                                    value={String(field.value)}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="true">Yes</SelectItem>
+                                      <SelectItem value="false">No</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={editForm.control}
+                              name="pinned"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Pinned</FormLabel>
+                                  <Select
+                                    onValueChange={(v) => field.onChange(v === "true")}
+                                    value={String(field.value)}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="true">Yes</SelectItem>
+                                      <SelectItem value="false">No</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm" className="btn-primary" disabled={editMutation.isPending}>
+                              <Check className="w-4 h-4 mr-1" />
+                              {editMutation.isPending ? "Saving..." : "Save"}
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                              <X className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card key={a.id} className={`border ${a.pinned ? "border-[#c4a052]" : "border-gray-200"}`}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Badge variant={typeBadgeVariant(a.type)}>{typeLabel(a.type)}</Badge>
+                            {a.pinned && <span className="text-xs text-[#c4a052] font-medium flex items-center gap-1"><Pin className="w-3 h-3" />Pinned</span>}
+                            {a.published
+                              ? <span className="text-xs text-green-600 flex items-center gap-1"><Globe className="w-3 h-3" />Published</span>
+                              : <span className="text-xs text-gray-400 flex items-center gap-1"><EyeOff className="w-3 h-3" />Draft</span>
+                            }
+                          </div>
+                          <div className="font-semibold text-[#1e3a5f]">{a.title}</div>
+                          <div className="text-sm text-gray-500 mt-1">{a.content}</div>
+                          <div className="text-xs text-gray-400 mt-2">{new Date(a.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleMutation.mutate({ id: a.id, field: "published", value: !a.published })}
+                            disabled={toggleMutation.isPending}
+                            className={a.published ? "text-green-600" : "text-gray-400"}
+                            title={a.published ? "Unpublish" : "Publish"}
+                          >
+                            {a.published ? <Globe className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleMutation.mutate({ id: a.id, field: "pinned", value: !a.pinned })}
+                            disabled={toggleMutation.isPending}
+                            className={a.pinned ? "text-[#c4a052]" : "text-gray-400"}
+                            title={a.pinned ? "Unpin" : "Pin"}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEdit(a)}
+                            className="text-[#1e3a5f]"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteMutation.mutate(a.id)}
+                            disabled={deleteMutation.isPending}
+                            className="text-red-500 hover:text-red-700"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

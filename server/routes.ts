@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import crypto from "crypto";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -654,6 +654,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to retrieve stats" });
+    }
+  });
+
+  // Public announcements endpoint
+  app.get("/api/announcements", async (_req: Request, res: Response) => {
+    try {
+      const announcementList = await storage.getPublishedAnnouncements();
+      res.json({ success: true, announcements: announcementList });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve announcements" });
+    }
+  });
+
+  // Admin announcements endpoints
+  app.get("/api/admin/announcements", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const announcementList = await storage.getAllAnnouncements();
+      res.json({ success: true, announcements: announcementList });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve announcements" });
+    }
+  });
+
+  app.post("/api/admin/announcements", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertAnnouncementSchema.parse(req.body);
+      const announcement = await storage.createAnnouncement(validatedData);
+      res.status(201).json({ success: true, announcement });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to create announcement" });
+      }
+    }
+  });
+
+  app.patch("/api/admin/announcements/:id", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertAnnouncementSchema.partial().parse(req.body);
+      const announcement = await storage.updateAnnouncement(id, validatedData);
+      if (!announcement) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+      res.json({ success: true, announcement });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to update announcement" });
+      }
+    }
+  });
+
+  app.delete("/api/admin/announcements/:id", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteAnnouncement(id);
+      if (!deleted) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to delete announcement" });
     }
   });
 

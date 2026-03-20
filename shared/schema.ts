@@ -141,3 +141,26 @@ export const adminSessions = pgTable("admin_sessions", {
 });
 
 export type AdminSession = typeof adminSessions.$inferSelect;
+
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull(),
+  published: boolean("published").notNull().default(false),
+  pinned: boolean("pinned").notNull().default(false),
+  createdAt: text("created_at").notNull(),
+});
+
+export const announcementTypeEnum = ["general", "new-class", "update"] as const;
+export type AnnouncementType = typeof announcementTypeEnum[number];
+
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  type: z.enum(announcementTypeEnum),
+});
+
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+export type Announcement = typeof announcements.$inferSelect;

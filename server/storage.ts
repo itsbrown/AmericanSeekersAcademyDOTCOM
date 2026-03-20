@@ -8,7 +8,8 @@ import {
   contactInquiries, type ContactInquiry, type InsertContactInquiry,
   blogPosts, type BlogPost, type InsertBlogPost,
   pageViews, type PageView, type InsertPageView,
-  adminSessions, type AdminSession
+  adminSessions, type AdminSession,
+  announcements, type Announcement, type InsertAnnouncement
 } from "@shared/schema";
 
 export interface IStorage {
@@ -57,6 +58,13 @@ export interface IStorage {
   getContactInquiries(): Promise<ContactInquiry[]>;
   getProgramInfoRequests(): Promise<ProgramInfoRequest[]>;
   getNewsletterSubscriptions(): Promise<Newsletter[]>;
+
+  // Announcement methods
+  getPublishedAnnouncements(): Promise<Announcement[]>;
+  getAllAnnouncements(): Promise<Announcement[]>;
+  createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
+  deleteAnnouncement(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -263,6 +271,45 @@ export class DatabaseStorage implements IStorage {
   
   async getNewsletterSubscriptions(): Promise<Newsletter[]> {
     return await db.select().from(newsletters).orderBy(desc(newsletters.createdAt));
+  }
+
+  // Announcement methods
+  async getPublishedAnnouncements(): Promise<Announcement[]> {
+    return await db
+      .select()
+      .from(announcements)
+      .where(eq(announcements.published, true))
+      .orderBy(desc(announcements.pinned), desc(announcements.createdAt));
+  }
+
+  async getAllAnnouncements(): Promise<Announcement[]> {
+    return await db
+      .select()
+      .from(announcements)
+      .orderBy(desc(announcements.pinned), desc(announcements.createdAt));
+  }
+
+  async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
+    const nowISOString = new Date().toISOString();
+    const [created] = await db.insert(announcements).values({
+      ...announcement,
+      createdAt: nowISOString,
+    }).returning();
+    return created;
+  }
+
+  async updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement | undefined> {
+    const [updated] = await db
+      .update(announcements)
+      .set(announcement)
+      .where(eq(announcements.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAnnouncement(id: number): Promise<boolean> {
+    const result = await db.delete(announcements).where(eq(announcements.id, id)).returning();
+    return result.length > 0;
   }
 }
 
