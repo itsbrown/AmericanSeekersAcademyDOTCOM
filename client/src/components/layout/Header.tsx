@@ -108,7 +108,7 @@ const Header = () => {
                 <button
                   type="button"
                   data-givebutter-trigger="HkmAXnl6"
-                  className="ml-4 bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer"
+                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
                   data-testid="nav-donate"
                 >
                   Donate
@@ -205,7 +205,7 @@ const Header = () => {
             type="button"
             data-givebutter-trigger="HkmAXnl6"
             onClick={closeMenu}
-            className="mt-3 block w-full bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white text-center py-3 font-semibold rounded cursor-pointer transition-colors duration-200"
+            className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200 w-full text-left"
             data-testid="mobile-nav-donate"
           >
             Donate
