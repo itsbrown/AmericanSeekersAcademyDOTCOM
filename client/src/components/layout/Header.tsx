@@ -105,14 +105,15 @@ const Header = () => {
                 </li>
               ))}
               <li>
-                <button
-                  type="button"
-                  data-givebutter-trigger="HkmAXnl6"
-                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                <a
+                  href="https://givebutter.com/HkmAXnl6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200"
                   data-testid="nav-donate"
                 >
                   Donate
-                </button>
+                </a>
               </li>
               <li>
                 <button 
@@ -201,15 +202,16 @@ const Header = () => {
               </Link>
             )
           ))}
-          <button
-            type="button"
-            data-givebutter-trigger="HkmAXnl6"
+          <a
+            href="https://givebutter.com/HkmAXnl6"
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={closeMenu}
-            className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200 w-full text-left"
+            className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200 w-full"
             data-testid="mobile-nav-donate"
           >
             Donate
-          </button>
+          </a>
           <button 
             onClick={() => { closeMenu(); setIsContactModalOpen(true); }} 
             className="mt-2 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
