@@ -75,6 +75,15 @@ const Footer = () => {
               <li><Link href="/#locations" className="text-white/70 hover:text-accent transition-colors duration-200">Locations</Link></li>
               <li><Link href="/#faq" className="text-white/70 hover:text-accent transition-colors duration-200">FAQ</Link></li>
               <li><a href="#" className="text-white/70 hover:text-accent transition-colors duration-200">Become a Mentor</a></li>
+              <li>
+                <button
+                  type="button"
+                  data-givebutter-trigger="HkmAXnl6"
+                  className="text-white/70 hover:text-accent transition-colors duration-200 bg-transparent border-0 p-0 cursor-pointer"
+                >
+                  Donate
+                </button>
+              </li>
             </ul>
           </div>
           

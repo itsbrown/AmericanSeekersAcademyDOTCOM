@@ -105,6 +105,16 @@ const Header = () => {
                 </li>
               ))}
               <li>
+                <button
+                  type="button"
+                  data-givebutter-trigger="HkmAXnl6"
+                  className="ml-4 bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer"
+                  data-testid="nav-donate"
+                >
+                  Donate
+                </button>
+              </li>
+              <li>
                 <button 
                   onClick={() => setIsContactModalOpen(true)} 
                   className="ml-4 bg-white text-[#1e3a5f] hover:bg-gray-100 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
@@ -191,9 +201,18 @@ const Header = () => {
               </Link>
             )
           ))}
+          <button
+            type="button"
+            data-givebutter-trigger="HkmAXnl6"
+            onClick={closeMenu}
+            className="mt-3 block w-full bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white text-center py-3 font-semibold rounded cursor-pointer transition-colors duration-200"
+            data-testid="mobile-nav-donate"
+          >
+            Donate
+          </button>
           <button 
             onClick={() => { closeMenu(); setIsContactModalOpen(true); }} 
-            className="mt-3 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+            className="mt-2 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             data-testid="mobile-nav-contact"
           >
             Contact
