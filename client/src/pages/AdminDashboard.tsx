@@ -352,6 +352,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
+                        <TableHead>No Phone Contact</TableHead>
                         <TableHead>Message</TableHead>
                         <TableHead>Date</TableHead>
                       </TableRow>
@@ -362,6 +363,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           <TableCell className="font-medium">{inquiry.name}</TableCell>
                           <TableCell>{inquiry.email}</TableCell>
                           <TableCell>{inquiry.phone}</TableCell>
+                          <TableCell>{inquiry.phoneOptOut ? <Badge variant="secondary">Opted Out</Badge> : <span className="text-gray-400">—</span>}</TableCell>
                           <TableCell className="max-w-xs truncate">{inquiry.message}</TableCell>
                           <TableCell>{new Date(inquiry.createdAt).toLocaleDateString()}</TableCell>
                         </TableRow>

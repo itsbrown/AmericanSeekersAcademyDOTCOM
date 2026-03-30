@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -16,6 +17,7 @@ const contactSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   message: z.string().min(10, "Message must be at least 10 characters"),
+  phoneOptOut: z.boolean().optional().default(false),
 });
 
 type ContactForm = z.infer<typeof contactSchema>;
@@ -36,6 +38,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       email: "",
       phone: "",
       message: "",
+      phoneOptOut: false,
     },
   });
 
@@ -150,6 +153,20 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 {form.formState.errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.phone.message}</p>
                 )}
+                <div className="flex items-center gap-2 mt-2">
+                  <Checkbox
+                    id="contact-phone-opt-out"
+                    checked={form.watch("phoneOptOut")}
+                    onCheckedChange={(checked) => form.setValue("phoneOptOut", checked === true)}
+                    data-testid="contact-phone-opt-out"
+                  />
+                  <label
+                    htmlFor="contact-phone-opt-out"
+                    className="text-sm text-gray-600 cursor-pointer"
+                  >
+                    I prefer not to be contacted by phone
+                  </label>
+                </div>
               </div>
 
               <div>

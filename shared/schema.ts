@@ -75,6 +75,7 @@ export const contactInquiries = pgTable("contact_inquiries", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   message: text("message").notNull(),
+  phoneOptOut: boolean("phone_opt_out").notNull().default(false),
   createdAt: text("created_at").notNull(),
 });
 
@@ -83,6 +84,9 @@ export const insertContactInquirySchema = createInsertSchema(contactInquiries).p
   email: true,
   phone: true,
   message: true,
+  phoneOptOut: true,
+}).extend({
+  phoneOptOut: z.boolean().optional().default(false),
 });
 
 export type InsertContactInquiry = z.infer<typeof insertContactInquirySchema>;
