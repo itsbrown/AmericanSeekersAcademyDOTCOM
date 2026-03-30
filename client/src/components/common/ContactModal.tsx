@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -153,20 +152,9 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 {form.formState.errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.phone.message}</p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Checkbox
-                    id="contact-phone-opt-out"
-                    checked={form.watch("phoneOptOut")}
-                    onCheckedChange={(checked) => form.setValue("phoneOptOut", checked === true)}
-                    data-testid="contact-phone-opt-out"
-                  />
-                  <label
-                    htmlFor="contact-phone-opt-out"
-                    className="text-sm text-gray-600 cursor-pointer"
-                  >
-                    I prefer not to be contacted by phone
-                  </label>
-                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  By submitting, you agree to receive marketing messages; reply STOP to opt out.
+                </p>
               </div>
 
               <div>
