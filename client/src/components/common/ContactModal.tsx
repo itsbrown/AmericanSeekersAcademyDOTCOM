@@ -194,6 +194,18 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   "Send Message"
                 )}
               </Button>
+
+              <p className="text-xs text-muted-foreground text-center">
+                By submitting, you agree to our{" "}
+                <Link href="/privacy-policy" className="underline hover:opacity-80 transition-opacity">
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link href="/sms-policy" className="underline hover:opacity-80 transition-opacity">
+                  SMS Policy
+                </Link>
+                .
+              </p>
             </form>
 
             <div className="mt-6 pt-4 border-t border-gray-100">

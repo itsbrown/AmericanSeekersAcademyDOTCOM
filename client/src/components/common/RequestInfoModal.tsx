@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -171,6 +172,18 @@ export default function RequestInfoModal({ isOpen, onClose, programSlug, program
                   "Send Me Information"
                 )}
               </Button>
+
+              <p className="text-xs text-muted-foreground text-center">
+                By submitting, you agree to our{" "}
+                <Link href="/privacy-policy" className="underline hover:opacity-80 transition-opacity">
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link href="/sms-policy" className="underline hover:opacity-80 transition-opacity">
+                  SMS Policy
+                </Link>
+                .
+              </p>
             </form>
 
             <p className="text-xs text-gray-500 mt-4 text-center">
