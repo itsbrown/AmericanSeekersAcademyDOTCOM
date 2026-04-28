@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -152,8 +153,12 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 {form.formState.errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.phone.message}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-2">
-                  By submitting, you agree to receive marketing messages; reply STOP to opt out.
+                <p className="text-xs text-muted-foreground mt-2">
+                  By submitting this form, you consent to receive program updates and enrollment information from American Seekers Academy via SMS. Message frequency may vary. Message and data rates may apply. Reply STOP to opt out, HELP for help. View our{" "}
+                  <Link href="/sms-policy" className="text-gold underline hover:opacity-80 transition-opacity">
+                    SMS Policy
+                  </Link>
+                  .
                 </p>
               </div>
 

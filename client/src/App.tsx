@@ -8,6 +8,7 @@ import BlogList from "@/pages/BlogList";
 import BlogPost from "@/pages/BlogPost";
 import BlogAdmin from "@/pages/BlogAdmin";
 import AdminDashboard from "@/pages/AdminDashboard";
+import SmsPolicy from "@/pages/SmsPolicy";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnalyticsTracker from "@/components/common/AnalyticsTracker";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/blog/admin" component={BlogAdmin} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/sms-policy" component={SmsPolicy} />
       <Route component={NotFound} />
     </Switch>
   );
