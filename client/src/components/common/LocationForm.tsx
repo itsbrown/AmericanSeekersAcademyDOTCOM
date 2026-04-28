@@ -131,7 +131,9 @@ const LocationForm = () => {
       
       <p className="text-xs text-neutral-500 mb-3">
         By submitting, you agree to our{' '}
-        <a href="/privacy-policy" className="underline hover:text-neutral-700">Privacy Policy</a>.
+        <a href="/privacy-policy" className="underline hover:text-neutral-700">Privacy Policy</a>{' '}
+        and{' '}
+        <a href="/terms-of-use" className="underline hover:text-neutral-700">Terms of Use</a>.
       </p>
 
       <div className="flex items-center justify-end">
