@@ -77,6 +77,7 @@ const Footer = () => {
               <li><a href="#" className="text-white/70 hover:text-accent transition-colors duration-200">Become a Mentor</a></li>
               <li><a href="https://givebutter.com/american-seekers-academy" target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-accent transition-colors duration-200">Donate</a></li>
               <li><Link href="/sms-policy" className="text-white/70 hover:text-accent transition-colors duration-200">SMS Policy</Link></li>
+              <li><Link href="/privacy-policy" className="text-white/70 hover:text-accent transition-colors duration-200">Privacy Policy</Link></li>
             </ul>
           </div>
           
