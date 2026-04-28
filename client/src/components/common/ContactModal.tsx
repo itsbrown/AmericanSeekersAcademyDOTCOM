@@ -199,10 +199,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 By submitting, you agree to our{" "}
                 <Link href="/privacy-policy" className="underline hover:opacity-80 transition-opacity">
                   Privacy Policy
-                </Link>{" "}
-                and{" "}
+                </Link>
+                ,{" "}
                 <Link href="/sms-policy" className="underline hover:opacity-80 transition-opacity">
                   SMS Policy
+                </Link>
+                , and{" "}
+                <Link href="/terms-of-use" className="underline hover:opacity-80 transition-opacity">
+                  Terms of Use
                 </Link>
                 .
               </p>
