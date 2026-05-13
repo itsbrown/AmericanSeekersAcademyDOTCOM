@@ -150,36 +150,54 @@ The blog system includes:
 - **Google Fonts**: Playfair Display and Inter fonts
 - **Lucide React**: Icon library for UI icons
 
-### Brevo Integration (Transactional Email)
-Transactional emails use Brevo (formerly Sendinblue). One secret must be set in Replit Secrets:
+### HubSpot Integration (Email & CRM)
+Transactional emails and contact management use HubSpot. Two secrets must be set in Replit Secrets:
 
 | Secret | Description |
 |--------|-------------|
-| `BREVO_API_KEY` | Brevo API key — found in Brevo → Settings → API Keys |
+| `HUBSPOT_API` | HubSpot Private App access token (starts with `pat-`) — used for all HubSpot API calls |
+| `HUBSPOT_TRANSACTIONAL_EMAIL_ID` | Numeric or UUID ID of a HubSpot Transactional Email template — found in HubSpot → Marketing → Email → Transactional |
 
-Emails are sent from `"American Seekers Academy" <contact@americanseekersacademy.com>` via the Brevo SMTP REST API (`POST https://api.brevo.com/v3/smtp/email`).
+The HubSpot transactional email template must include these tokens:
+- Subject line: `{{ custom.subject }}`
+- Body: `{{{ custom.html_content }}}` (triple braces to render raw HTML)
 
-Three email flows use Brevo:
+Three email flows use HubSpot:
 1. Contact form submissions → notification email to `contact@americanseekersacademy.com`
 2. Location suggestion submissions → notification email to `contact@americanseekersacademy.com`
 3. Program info requests → welcome/PDF email sent to the parent
 
-Contact form submitters are also upserted as contacts in HubSpot CRM automatically (requires `HUBSPOT_API` secret with `crm.objects.contacts.write` scope).
+Contact form submitters are also upserted as contacts in HubSpot CRM automatically.
 
-### HubSpot Integration (CRM only)
-HubSpot is used only for CRM contact upserts — NOT for email sending.
+### HubSpot Portal Setup Requirements
 
-| Secret | Description |
-|--------|-------------|
-| `HUBSPOT_API` | HubSpot Private App access token (starts with `pat-`) |
+To have all three email flows deliver successfully, the following must be completed inside the HubSpot portal:
 
-Required scope: `crm.objects.contacts.write`
+**Private App Setup**
+1. Go to HubSpot → Settings → Integrations → Private Apps
+2. Create a private app (or confirm one exists) with these scopes:
+   - `transactional-email` (send transactional emails)
+   - `crm.objects.contacts.write` (upsert contacts from the contact form)
+3. Copy the access token (starts with `pat-`) and save it as `HUBSPOT_API` in Replit Secrets
+
+**Transactional Email Template**
+1. Go to HubSpot → Marketing → Email → Transactional
+2. Create (or confirm) a transactional email template
+3. The template subject line must contain: `{{ custom.subject }}`
+4. The template body must contain: `{{{ custom.html_content }}}` (triple braces for raw HTML)
+5. Copy the numeric template ID from the URL or template list and save as `HUBSPOT_TRANSACTIONAL_EMAIL_ID` in Replit Secrets
+6. Ensure transactional email is enabled for your HubSpot subscription (requires Marketing Hub or add-on)
+
+**Sending Domain**
+1. Go to HubSpot → Settings → Marketing → Email → Sending Domains
+2. Verify/authenticate a sending domain (the "from" domain used in `sendTransactionalEmail()`)
+3. Emails are sent as `"American Seekers Academy" <noreply@americanseekersacademy.com>`
 
 **Admin Email Delivery Verification (Email Health tab)**
 The admin dashboard at `/admin` → Email Health tab provides:
-- Live configuration status showing whether the Brevo secret is set
-- Per-flow test buttons (Contact, Location, Program) that mirror the real public form submission flow exactly — saving a DB record and calling Brevo
-- A server-persisted audit log (`email_test_runs` table) showing message IDs for each test
+- Live configuration status showing whether both secrets are set
+- Per-flow test buttons (Contact, Location, Program) that mirror the real public form submission flow exactly — saving a DB record and calling HubSpot
+- A server-persisted audit log (`email_test_runs` table) showing HubSpot `statusId`/`sendId` for each test
 - "Confirm Delivery" buttons to record human inbox verification with a timestamp, stored permanently in the database
 
 **API Endpoints for Email Audit**
