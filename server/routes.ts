@@ -2,7 +2,6 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import crypto from "crypto";
-import sgMail from "@sendgrid/mail";
 import { storage } from "./storage";
 import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
@@ -63,32 +62,41 @@ interface EmailSendResult {
 }
 
 async function sendTransactionalEmail(to: string, toName: string, subject: string, htmlContent: string): Promise<EmailSendResult> {
-  const apiKey = process.env.SENDGRID_API_KEY;
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    throw new Error("SENDGRID_API_KEY not configured");
+    throw new Error("BREVO_API_KEY not configured");
   }
-
-  sgMail.setApiKey(apiKey);
 
   const sendId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  await sgMail.send({
-    to,
-    from: {
-      email: "contact@americanseekersacademy.com",
-      name: "American Seekers Academy",
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "content-type": "application/json",
+      "accept": "application/json",
     },
-    replyTo: "contact@americanseekersacademy.com",
-    subject,
-    html: htmlContent,
+    body: JSON.stringify({
+      sender: { email: "contact@americanseekersacademy.com", name: "American Seekers Academy" },
+      to: [{ email: to, name: toName }],
+      replyTo: { email: "contact@americanseekersacademy.com" },
+      subject,
+      htmlContent,
+    }),
   });
 
-  return { sendId, statusId: "accepted" };
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo API error ${response.status}: ${errorBody}`);
+  }
+
+  const data = await response.json() as { messageId?: string };
+  return { sendId: data.messageId ?? sendId, statusId: "accepted" };
 }
 
 async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }): Promise<EmailSendResult | null> {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log("SENDGRID_API_KEY not configured - skipping contact inquiry notification");
+  if (!process.env.BREVO_API_KEY) {
+    console.log("BREVO_API_KEY not configured - skipping contact inquiry notification");
     return null;
   }
 
@@ -127,8 +135,8 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
 }
 
 async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }): Promise<EmailSendResult | null> {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log("SENDGRID_API_KEY not configured - skipping location suggestion notification");
+  if (!process.env.BREVO_API_KEY) {
+    console.log("BREVO_API_KEY not configured - skipping location suggestion notification");
     return null;
   }
 
@@ -166,8 +174,8 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
 }
 
 async function sendProgramInfoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
-  if (!process.env.SENDGRID_API_KEY) {
-    throw new Error("SENDGRID_API_KEY not configured");
+  if (!process.env.BREVO_API_KEY) {
+    throw new Error("BREVO_API_KEY not configured");
   }
 
   const baseUrl = process.env.NODE_ENV === 'production'
@@ -572,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/email-status", requireAdmin as any, async (_req: Request, res: Response) => {
     res.json({
       success: true,
-      sendgridApiConfigured: !!process.env.SENDGRID_API_KEY,
+      brevoApiConfigured: !!process.env.BREVO_API_KEY,
       hubspotApiConfigured: !!process.env.HUBSPOT_API,
     });
   });
@@ -583,9 +591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Flow: contact — mirrors POST /api/contact-inquiry
   app.post("/api/admin/test-email/contact", requireAdmin as any, async (req: Request, res: Response) => {
-    const config = { sendgridApiConfigured: !!process.env.SENDGRID_API_KEY };
-    if (!process.env.SENDGRID_API_KEY) {
-      res.json({ success: false, config, message: "Missing SENDGRID_API_KEY — see configuration status." });
+    const config = { brevoApiConfigured: !!process.env.BREVO_API_KEY };
+    if (!process.env.BREVO_API_KEY) {
+      res.json({ success: false, config, message: "Missing BREVO_API_KEY — see configuration status." });
       return;
     }
 
@@ -628,16 +636,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       run,
       sentTo,
       message: emailResult
-        ? `SendGrid accepted the contact notification email. Check contact@americanseekersacademy.com inbox to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        ? `Brevo accepted the contact notification email. Check contact@americanseekersacademy.com inbox to confirm delivery, then mark it confirmed below.`
+        : `Brevo API call failed: ${errorMessage}`,
     });
   });
 
   // Flow: location — mirrors POST /api/location-suggestions
   app.post("/api/admin/test-email/location", requireAdmin as any, async (req: Request, res: Response) => {
-    const config = { sendgridApiConfigured: !!process.env.SENDGRID_API_KEY };
-    if (!process.env.SENDGRID_API_KEY) {
-      res.json({ success: false, config, message: "Missing SENDGRID_API_KEY — see configuration status." });
+    const config = { brevoApiConfigured: !!process.env.BREVO_API_KEY };
+    if (!process.env.BREVO_API_KEY) {
+      res.json({ success: false, config, message: "Missing BREVO_API_KEY — see configuration status." });
       return;
     }
 
@@ -679,8 +687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       run,
       sentTo,
       message: emailResult
-        ? `SendGrid accepted the location suggestion email. Check contact@americanseekersacademy.com to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        ? `Brevo accepted the location suggestion email. Check contact@americanseekersacademy.com to confirm delivery, then mark it confirmed below.`
+        : `Brevo API call failed: ${errorMessage}`,
     });
   });
 
@@ -694,9 +702,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return;
     }
 
-    const config = { sendgridApiConfigured: !!process.env.SENDGRID_API_KEY };
-    if (!process.env.SENDGRID_API_KEY) {
-      res.json({ success: false, config, message: "Missing SENDGRID_API_KEY — see configuration status." });
+    const config = { brevoApiConfigured: !!process.env.BREVO_API_KEY };
+    if (!process.env.BREVO_API_KEY) {
+      res.json({ success: false, config, message: "Missing BREVO_API_KEY — see configuration status." });
       return;
     }
 
@@ -744,8 +752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       run,
       sentTo: recipientEmail,
       message: emailResult
-        ? `SendGrid accepted the program welcome email. Check ${recipientEmail} inbox to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        ? `Brevo accepted the program welcome email. Check ${recipientEmail} inbox to confirm delivery, then mark it confirmed below.`
+        : `Brevo API call failed: ${errorMessage}`,
     });
   });
 
