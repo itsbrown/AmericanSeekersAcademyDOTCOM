@@ -15,59 +15,8 @@ const programPdfUrls: Record<string, string> = {
   "patriots": "/pdfs/patriots.pdf",
 };
 
-const BREVO_WEBSITE_CONTACTS_LIST_ID = 2; // Will be created/updated on first use
-
-async function getOrCreateBrevoList(): Promise<number> {
-  const apiKey = process.env.BREVO_API_KEY;
-  if (!apiKey) return BREVO_WEBSITE_CONTACTS_LIST_ID;
-
-  try {
-    // Try to get existing lists to find "Website Contacts"
-    const listsResponse = await fetch("https://api.brevo.com/v3/contacts/lists?limit=50", {
-      method: "GET",
-      headers: {
-        "accept": "application/json",
-        "api-key": apiKey,
-      },
-    });
-
-    if (listsResponse.ok) {
-      const listsData = await listsResponse.json();
-      const existingList = listsData.lists?.find((list: { name: string; id: number }) => 
-        list.name === "Website Contacts"
-      );
-      if (existingList) {
-        return existingList.id;
-      }
-    }
-
-    // Create the list if it doesn't exist
-    const createResponse = await fetch("https://api.brevo.com/v3/contacts/lists", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "api-key": apiKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        name: "Website Contacts",
-        folderId: 1
-      }),
-    });
-
-    if (createResponse.ok) {
-      const createData = await createResponse.json();
-      return createData.id;
-    }
-  } catch (error) {
-    console.error("Error getting/creating Brevo list:", error);
-  }
-
-  return BREVO_WEBSITE_CONTACTS_LIST_ID;
-}
-
-async function addContactToBrevoList(email: string, name: string, listId: number) {
-  const apiKey = process.env.BREVO_API_KEY;
+async function addHubSpotContact(email: string, name: string) {
+  const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) return;
 
   try {
@@ -75,36 +24,92 @@ async function addContactToBrevoList(email: string, name: string, listId: number
     const firstName = nameParts[0] || name;
     const lastName = nameParts.slice(1).join(" ") || "";
 
-    await fetch("https://api.brevo.com/v3/contacts", {
+    const response = await fetch("https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert", {
       method: "POST",
       headers: {
-        "accept": "application/json",
-        "api-key": apiKey,
+        "authorization": `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        email: email,
-        attributes: {
-          FIRSTNAME: firstName,
-          LASTNAME: lastName,
-        },
-        listIds: [listId],
-        updateEnabled: true
+        inputs: [
+          {
+            idProperty: "email",
+            id: email,
+            properties: {
+              email,
+              firstname: firstName,
+              lastname: lastName,
+            },
+          },
+        ],
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HubSpot contact upsert failed: ${errorText}`);
+    }
   } catch (error) {
-    console.error("Error adding contact to Brevo list:", error);
+    console.error("Error adding contact to HubSpot:", error);
   }
 }
 
-async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }) {
-  const apiKey = process.env.BREVO_API_KEY;
+async function sendTransactionalEmail(to: string, toName: string, subject: string, htmlContent: string) {
+  const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
-    console.log("BREVO_API_KEY not configured - skipping contact inquiry notification");
+    throw new Error("HUBSPOT_API not configured");
+  }
+
+  const emailId = process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID;
+  if (!emailId) {
+    throw new Error("HUBSPOT_TRANSACTIONAL_EMAIL_ID not configured");
+  }
+
+  // HubSpot Single Send is template-based. Dynamic content is injected via
+  // customProperties tokens. The referenced HubSpot template must include:
+  //   Subject line token:  {{ custom.subject }}
+  //   Body HTML token:     {{{ custom.html_content }}}  (triple braces = raw HTML)
+  const response = await fetch("https://api.hubapi.com/marketing/v3/transactional/single-email/send", {
+    method: "POST",
+    headers: {
+      "authorization": `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      emailId,
+      message: {
+        from: "contact@americanseekersacademy.com",
+        to,
+        sendId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        replyTo: ["contact@americanseekersacademy.com"],
+      },
+      contactProperties: {
+        email: to,
+        firstname: toName,
+      },
+      customProperties: {
+        subject,
+        html_content: htmlContent,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HubSpot email API error: ${errorText}`);
+  }
+
+  return response.json();
+}
+
+async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }) {
+  const apiKey = process.env.HUBSPOT_API;
+  if (!apiKey) {
+    console.log("HUBSPOT_API not configured - skipping contact inquiry notification");
     return;
   }
 
-  const emailContent = `
+  const htmlContent = `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -128,35 +133,26 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
     </html>
   `;
 
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
-      to: [{ email: "contact@americanseekersacademy.com", name: "American Seekers Academy" }],
-      subject: `New Contact Inquiry from ${inquiry.name}`,
-      htmlContent: emailContent,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Failed to send contact inquiry notification: ${errorText}`);
+  try {
+    await sendTransactionalEmail(
+      "contact@americanseekersacademy.com",
+      "American Seekers Academy",
+      `New Contact Inquiry from ${inquiry.name}`,
+      htmlContent
+    );
+  } catch (err) {
+    console.error("Failed to send contact inquiry notification:", err);
   }
 }
 
 async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }) {
-  const apiKey = process.env.BREVO_API_KEY;
+  const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
-    console.log("BREVO_API_KEY not configured - skipping location suggestion notification");
+    console.log("HUBSPOT_API not configured - skipping location suggestion notification");
     return;
   }
 
-  const emailContent = `
+  const htmlContent = `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -179,31 +175,22 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
     </html>
   `;
 
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
-      to: [{ email: "contact@americanseekersacademy.com", name: "American Seekers Academy" }],
-      subject: `New Location Suggestion: ${suggestion.location}`,
-      htmlContent: emailContent,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Failed to send location suggestion notification: ${errorText}`);
+  try {
+    await sendTransactionalEmail(
+      "contact@americanseekersacademy.com",
+      "American Seekers Academy",
+      `New Location Suggestion: ${suggestion.location}`,
+      htmlContent
+    );
+  } catch (err) {
+    console.error("Failed to send location suggestion notification:", err);
   }
 }
 
-async function sendBrevoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
-  const apiKey = process.env.BREVO_API_KEY;
+async function sendProgramInfoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
+  const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
-    throw new Error("BREVO_API_KEY not configured");
+    throw new Error("HUBSPOT_API not configured");
   }
 
   const baseUrl = process.env.NODE_ENV === 'production'
@@ -212,7 +199,7 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
       ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
       : 'http://localhost:5000';
 
-  const emailContent = `
+  const htmlContent = `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -242,27 +229,7 @@ async function sendBrevoEmail(to: string, name: string, programName: string, pro
     </html>
   `;
 
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: "American Seekers Academy", email: "contact@americanseekersacademy.com" },
-      to: [{ email: to, name: name }],
-      subject: `${programName} Program Information - American Seekers Academy`,
-      htmlContent: emailContent,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Brevo API error: ${errorText}`);
-  }
-
-  return response.json();
+  return sendTransactionalEmail(to, name, `${programName} Program Information - American Seekers Academy`, htmlContent);
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -331,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API route for program info requests with Brevo email
+  // API route for program info requests with email
   app.post("/api/program-info-request", async (req: Request, res: Response) => {
     try {
       const validatedData = insertProgramInfoRequestSchema.parse(req.body);
@@ -342,8 +309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get PDF URL for this program
       const pdfUrl = programPdfUrls[validatedData.programSlug] || "/pdfs/general.pdf";
       
-      // Send email via Brevo
-      await sendBrevoEmail(
+      // Send email via HubSpot
+      await sendProgramInfoEmail(
         validatedData.email,
         validatedData.name,
         validatedData.programName,
@@ -357,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
-      } else if (error instanceof Error && error.message.includes("Brevo")) {
+      } else if (error instanceof Error && (error.message.includes("HubSpot") || error.message.includes("HUBSPOT_"))) {
         res.status(500).json({ success: false, message: "Failed to send email. Please try again." });
       } else {
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
@@ -365,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API route for contact inquiries with Brevo list and email notification
+  // API route for contact inquiries with HubSpot contact and email notification
   app.post("/api/contact-inquiry", async (req: Request, res: Response) => {
     try {
       const validatedData = insertContactInquirySchema.parse(req.body);
@@ -373,11 +340,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save to database
       const inquiry = await storage.createContactInquiry(validatedData);
       
-      // Get or create the "Website Contacts" list and add contact (don't block)
-      getOrCreateBrevoList().then(listId => {
-        addContactToBrevoList(validatedData.email, validatedData.name, listId);
-      }).catch(err => {
-        console.error("Failed to add contact to Brevo list:", err);
+      // Add contact to HubSpot CRM (don't block)
+      addHubSpotContact(validatedData.email, validatedData.name).catch(err => {
+        console.error("Failed to add contact to HubSpot:", err);
       });
       
       // Send email notification (don't block)

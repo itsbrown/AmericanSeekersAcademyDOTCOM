@@ -149,6 +149,25 @@ The blog system includes:
 - **Google Fonts**: Playfair Display and Inter fonts
 - **Lucide React**: Icon library for UI icons
 
+### HubSpot Integration (Email & CRM)
+Transactional emails and contact management use HubSpot. Two secrets must be set in Replit Secrets:
+
+| Secret | Description |
+|--------|-------------|
+| `HUBSPOT_API` | HubSpot Private App access token (starts with `pat-`) — used for all HubSpot API calls |
+| `HUBSPOT_TRANSACTIONAL_EMAIL_ID` | Numeric or UUID ID of a HubSpot Transactional Email template — found in HubSpot → Marketing → Email → Transactional |
+
+The HubSpot transactional email template must include these tokens:
+- Subject line: `{{ custom.subject }}`
+- Body: `{{{ custom.html_content }}}` (triple braces to render raw HTML)
+
+Three email flows use HubSpot:
+1. Contact form submissions → notification email to `contact@americanseekersacademy.com`
+2. Location suggestion submissions → notification email to `contact@americanseekersacademy.com`
+3. Program info requests → welcome/PDF email sent to the parent
+
+Contact form submitters are also upserted as contacts in HubSpot CRM automatically.
+
 ### Key NPM Packages
 - `drizzle-kit`: Database migrations and schema management
 - `express-session` with `connect-pg-simple`: Session management
