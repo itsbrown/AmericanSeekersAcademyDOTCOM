@@ -15,7 +15,7 @@ const programPdfUrls: Record<string, string> = {
   "patriots": "/pdfs/patriots.pdf",
 };
 
-async function addHubSpotContact(email: string, name: string) {
+async function addHubSpotContact(email: string, name: string, extraProperties?: Record<string, string>) {
   const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) return;
 
@@ -39,6 +39,7 @@ async function addHubSpotContact(email: string, name: string) {
               email,
               firstname: firstName,
               lastname: lastName,
+              ...extraProperties,
             },
           },
         ],
@@ -317,6 +318,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.programSlug,
         pdfUrl
       );
+
+      // Add the parent as a HubSpot contact (fire-and-forget)
+      addHubSpotContact(validatedData.email, validatedData.name, {
+        last_program_inquired: validatedData.programName,
+      }).catch(err => {
+        console.error("Failed to add program info requester to HubSpot CRM:", err);
+      });
       
       res.status(201).json({ success: true, request });
     } catch (error) {
