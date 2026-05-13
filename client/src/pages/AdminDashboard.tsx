@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check } from "lucide-react";
+import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -285,6 +285,10 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
               <Megaphone className="w-4 h-4" />
               Announcements
             </TabsTrigger>
+            <TabsTrigger value="email-health" className="flex items-center gap-2" data-testid="tab-email-health">
+              <ShieldCheck className="w-4 h-4" />
+              Email Health
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -565,8 +569,480 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="announcements">
             <AnnouncementsTab getAuthHeaders={getAuthHeaders} onLogout={onLogout} />
           </TabsContent>
+
+          <TabsContent value="email-health">
+            <EmailHealthTab getAuthHeaders={getAuthHeaders} />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+type EmailTestRun = {
+  id: number;
+  flow: string;
+  sentTo: string;
+  hubspotStatusId: string | null;
+  hubspotSendId: string | null;
+  apiAccepted: boolean;
+  errorMessage: string | null;
+  sentAt: string;
+  inboxConfirmedAt: string | null;
+  confirmedBy: string | null;
+};
+
+type FlowTestResult = {
+  success: boolean;
+  message: string;
+  sentTo?: string;
+  run?: EmailTestRun;
+  hubspotResponse?: Record<string, unknown>;
+};
+
+function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit }) {
+  const { toast } = useToast();
+  const [programRecipient, setProgramRecipient] = useState("contact@americanseekersacademy.com");
+  const [results, setResults] = useState<Record<string, FlowTestResult>>({});
+
+  const testRunsQuery = useQuery<{ success: boolean; runs: EmailTestRun[] }>({
+    queryKey: ["/api/admin/email-test-runs"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/email-test-runs", { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    refetchInterval: false,
+  });
+
+  const statusQuery = useQuery<{ success: boolean; hubspotApiConfigured: boolean; hubspotEmailIdConfigured: boolean }>({
+    queryKey: ["/api/admin/email-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/email-status", { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const contactMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/test-email/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      return res.json() as Promise<FlowTestResult>;
+    },
+    onSuccess: (data) => {
+      setResults((prev) => ({ ...prev, contact: data }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-test-runs"] });
+      if (data.success) {
+        toast({ title: "Contact flow email sent", description: `Check inbox at ${data.sentTo}` });
+      } else {
+        toast({ title: "Email send failed", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: () => toast({ title: "Request failed", description: "Could not reach the server.", variant: "destructive" }),
+  });
+
+  const locationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/test-email/location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      return res.json() as Promise<FlowTestResult>;
+    },
+    onSuccess: (data) => {
+      setResults((prev) => ({ ...prev, location: data }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-test-runs"] });
+      if (data.success) {
+        toast({ title: "Location flow email sent", description: `Check inbox at ${data.sentTo}` });
+      } else {
+        toast({ title: "Email send failed", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: () => toast({ title: "Request failed", description: "Could not reach the server.", variant: "destructive" }),
+  });
+
+  const programMutation = useMutation({
+    mutationFn: async (recipient: string) => {
+      const res = await fetch("/api/admin/test-email/program", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ recipientEmail: recipient }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      return res.json() as Promise<FlowTestResult>;
+    },
+    onSuccess: (data) => {
+      setResults((prev) => ({ ...prev, program: data }));
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-test-runs"] });
+      if (data.success) {
+        toast({ title: "Program flow email sent", description: `Check inbox at ${data.sentTo}` });
+      } else {
+        toast({ title: "Email send failed", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: () => toast({ title: "Request failed", description: "Could not reach the server.", variant: "destructive" }),
+  });
+
+  const status = statusQuery.data;
+  const allConfigured = status?.hubspotApiConfigured && status?.hubspotEmailIdConfigured;
+
+  const ConfigRow = ({ label, value }: { label: string; value: boolean | undefined }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-0">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      {value === undefined ? (
+        <span className="text-gray-400 text-sm">Checking…</span>
+      ) : value ? (
+        <span className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
+          <CheckCircle2 className="w-4 h-4" /> Configured
+        </span>
+      ) : (
+        <span className="flex items-center gap-1.5 text-red-500 text-sm font-medium">
+          <XCircle className="w-4 h-4" /> Missing
+        </span>
+      )}
+    </div>
+  );
+
+  const FlowResultBox = ({ flow }: { flow: string }) => {
+    const r = results[flow];
+    if (!r) return null;
+    return (
+      <div className={`rounded-md border p-3 mt-3 ${r.success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+        <div className="flex items-start gap-2">
+          {r.success
+            ? <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+            : <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />}
+          <div className="flex-1 min-w-0 space-y-1">
+            <p className={`text-sm font-medium ${r.success ? "text-green-700" : "text-red-700"}`}>
+              {r.success ? "HubSpot API accepted the request" : "API call failed — email was not sent"}
+            </p>
+            <p className={`text-sm ${r.success ? "text-green-600" : "text-red-600"}`}>{r.message}</p>
+            {r.success && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+                API acceptance does not guarantee inbox delivery. Open the inbox at{" "}
+                <strong>{r.sentTo}</strong> and confirm the email arrived to complete verification.
+              </p>
+            )}
+            {r.hubspotResponse && (
+              <details className="mt-1">
+                <summary className="text-xs text-gray-500 cursor-pointer select-none">HubSpot API response</summary>
+                <pre className="mt-1 text-xs bg-white border rounded p-2 overflow-auto max-h-32 whitespace-pre-wrap">
+                  {JSON.stringify(r.hubspotResponse, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5" />
+            HubSpot Configuration Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ConfigRow label="HUBSPOT_API secret" value={status?.hubspotApiConfigured} />
+          <ConfigRow label="HUBSPOT_TRANSACTIONAL_EMAIL_ID secret" value={status?.hubspotEmailIdConfigured} />
+          {status && !allConfigured && (
+            <div className="mt-4 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-700">
+                One or more secrets are missing. Add them in the Replit Secrets panel, then restart the server.
+                The HubSpot template must include <code className="bg-amber-100 px-1 rounded">{"{{ custom.subject }}"}</code> and{" "}
+                <code className="bg-amber-100 px-1 rounded">{"{{{ custom.html_content }}}"}</code> (triple braces) tokens, and the sender domain{" "}
+                <strong>americanseekersacademy.com</strong> must be verified in HubSpot (Settings → Domain Management).
+              </p>
+            </div>
+          )}
+          {status && allConfigured && (
+            <div className="mt-4 flex items-start gap-2 rounded-md bg-green-50 border border-green-200 p-3">
+              <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-green-700">
+                Both secrets are set. Use the per-flow tests below to confirm live delivery for each email path.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="w-5 h-5" />
+            Per-Flow Live Delivery Tests
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-gray-600">
+            Each button calls the <strong>real production email function</strong> with sample data so the exact same code path runs as when a visitor submits a form. Check the indicated inbox after each test to confirm receipt.
+          </p>
+
+          {/* Flow 1: Contact inquiry */}
+          <div className="rounded-md border p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-[#1e3a5f]">Contact Form Notification</p>
+                <p className="text-xs text-gray-500 mt-0.5">Sends to: contact@americanseekersacademy.com</p>
+                <p className="text-xs text-gray-400 font-mono">POST /api/contact-inquiry → sendContactInquiryNotification()</p>
+              </div>
+              <Button
+                onClick={() => contactMutation.mutate()}
+                disabled={contactMutation.isPending || !allConfigured}
+                className="btn-primary whitespace-nowrap shrink-0"
+                size="sm"
+              >
+                {contactMutation.isPending ? "Sending…" : "Test Contact Flow"}
+              </Button>
+            </div>
+            <FlowResultBox flow="contact" />
+          </div>
+
+          {/* Flow 2: Location suggestion */}
+          <div className="rounded-md border p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-[#1e3a5f]">Location Suggestion Notification</p>
+                <p className="text-xs text-gray-500 mt-0.5">Sends to: contact@americanseekersacademy.com</p>
+                <p className="text-xs text-gray-400 font-mono">POST /api/location-suggestions → sendLocationSuggestionNotification()</p>
+              </div>
+              <Button
+                onClick={() => locationMutation.mutate()}
+                disabled={locationMutation.isPending || !allConfigured}
+                className="btn-primary whitespace-nowrap shrink-0"
+                size="sm"
+              >
+                {locationMutation.isPending ? "Sending…" : "Test Location Flow"}
+              </Button>
+            </div>
+            <FlowResultBox flow="location" />
+          </div>
+
+          {/* Flow 3: Program info request welcome email */}
+          <div className="rounded-md border p-4 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-[#1e3a5f]">Program Info Welcome Email</p>
+                <p className="text-xs text-gray-500 mt-0.5">Sends to: the parent's email (enter below)</p>
+                <p className="text-xs text-gray-400 font-mono">POST /api/program-info-request → sendProgramInfoEmail()</p>
+              </div>
+              <Button
+                onClick={() => programMutation.mutate(programRecipient)}
+                disabled={programMutation.isPending || !allConfigured || !programRecipient}
+                className="btn-primary whitespace-nowrap shrink-0"
+                size="sm"
+              >
+                {programMutation.isPending ? "Sending…" : "Test Program Flow"}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 whitespace-nowrap">Test recipient:</span>
+              <Input
+                value={programRecipient}
+                onChange={(e) => setProgramRecipient(e.target.value)}
+                placeholder="your@email.com"
+                className="text-sm h-8"
+              />
+            </div>
+            <FlowResultBox flow="program" />
+          </div>
+
+          {!allConfigured && status && (
+            <p className="text-xs text-amber-600">Fix the missing secrets shown above before running tests.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <Check className="w-4 h-4 text-[#1e3a5f]" />
+            Inbox Delivery Verification Log
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-gray-500">
+            After each test above, check the inbox and click "Confirm Delivery" to record server-side proof that the email was received.
+          </p>
+          <ServerVerificationLog
+            runs={testRunsQuery.data?.runs ?? []}
+            isLoading={testRunsQuery.isLoading}
+            getAuthHeaders={getAuthHeaders}
+            onConfirmed={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/email-test-runs"] })}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            HubSpot Portal Setup Checklist
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-gray-500 mb-3">
+            Check off each item as you confirm it in the HubSpot portal. Saved in your browser.
+          </p>
+          <HubSpotSetupChecklist />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+const CHECKLIST_KEY = "asa_hubspot_checklist";
+
+const FLOW_LABELS: Record<string, string> = {
+  contact: "Contact Form Notification",
+  location: "Location Suggestion Notification",
+  program: "Program Info Welcome Email",
+};
+
+function ServerVerificationLog({
+  runs,
+  isLoading,
+  getAuthHeaders,
+  onConfirmed,
+}: {
+  runs: EmailTestRun[];
+  isLoading: boolean;
+  getAuthHeaders: () => HeadersInit;
+  onConfirmed: () => void;
+}) {
+  const { toast } = useToast();
+
+  const confirmMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/email-test-runs/${id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ confirmedBy: "admin" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      onConfirmed();
+      toast({ title: "Inbox delivery confirmed", description: "Record saved to database." });
+    },
+    onError: () => toast({ title: "Failed to confirm", variant: "destructive" }),
+  });
+
+  if (isLoading) return <Skeleton className="h-20 w-full" />;
+  if (runs.length === 0) {
+    return <p className="text-sm text-gray-400 text-center py-4">No test runs yet. Use the flow tests above to send the first one.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {runs.slice(0, 20).map((run) => (
+        <div
+          key={run.id}
+          className={`rounded-md border p-3 ${
+            run.inboxConfirmedAt ? "bg-green-50 border-green-200" : run.apiAccepted ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-0.5">
+              {run.inboxConfirmedAt
+                ? <CheckCircle2 className="w-4 h-4 text-green-600" />
+                : run.apiAccepted
+                ? <AlertTriangle className="w-4 h-4 text-amber-500" />
+                : <XCircle className="w-4 h-4 text-red-500" />}
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-gray-800">{FLOW_LABELS[run.flow] ?? run.flow}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                  run.inboxConfirmedAt ? "bg-green-100 text-green-700" : run.apiAccepted ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                }`}>
+                  {run.inboxConfirmedAt ? "Inbox confirmed" : run.apiAccepted ? "API accepted, inbox pending" : "API failed"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">Sent to: {run.sentTo}</p>
+              {run.hubspotStatusId && <p className="text-xs text-gray-400 font-mono">statusId: {run.hubspotStatusId}</p>}
+              {run.hubspotSendId && <p className="text-xs text-gray-400 font-mono">sendId: {run.hubspotSendId}</p>}
+              {run.errorMessage && <p className="text-xs text-red-600">Error: {run.errorMessage}</p>}
+              <p className="text-xs text-gray-400">Sent: {new Date(run.sentAt).toLocaleString()}</p>
+              {run.inboxConfirmedAt && (
+                <p className="text-xs text-green-600">
+                  Inbox confirmed: {new Date(run.inboxConfirmedAt).toLocaleString()} by {run.confirmedBy}
+                </p>
+              )}
+            </div>
+            {run.apiAccepted && !run.inboxConfirmedAt && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 text-xs border-green-500 text-green-700 hover:bg-green-50"
+                onClick={() => confirmMutation.mutate(run.id)}
+                disabled={confirmMutation.isPending}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Confirm Delivery
+              </Button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HubSpotSetupChecklist() {
+  const items = [
+    { key: "api_secret", label: "HUBSPOT_API secret is set (starts with pat-)" },
+    { key: "email_id", label: "HUBSPOT_TRANSACTIONAL_EMAIL_ID is set to the template ID from HubSpot Marketing → Email → Transactional" },
+    { key: "template_subject", label: "HubSpot template subject line contains: {{ custom.subject }}" },
+    { key: "template_body", label: "HubSpot template body contains: {{{ custom.html_content }}} (triple braces = raw HTML)" },
+    { key: "domain_verified", label: "Sender domain americanseekersacademy.com is verified in HubSpot (Settings → Website → Domains)" },
+    { key: "app_scope", label: "HubSpot Private App has the 'transactional-email' scope enabled" },
+  ];
+
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) ?? "{}"); } catch { return {}; }
+  });
+
+  const toggle = (key: string) => {
+    const updated = { ...checked, [key]: !checked[key] };
+    setChecked(updated);
+    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
+  };
+
+  const allDone = items.every((i) => checked[i.key]);
+
+  return (
+    <div className="space-y-2">
+      {allDone && (
+        <div className="flex items-center gap-2 rounded-md bg-green-50 border border-green-200 p-2 mb-3">
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+          <p className="text-xs text-green-700 font-medium">All setup items confirmed. HubSpot portal configuration is complete.</p>
+        </div>
+      )}
+      {items.map((item) => (
+        <label key={item.key} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover:bg-gray-50 transition-colors">
+          <input
+            type="checkbox"
+            className="mt-0.5 w-4 h-4 accent-[#1e3a5f] shrink-0"
+            checked={!!checked[item.key]}
+            onChange={() => toggle(item.key)}
+          />
+          <span className={`text-sm ${checked[item.key] ? "line-through text-gray-400" : "text-gray-700"}`}>{item.label}</span>
+        </label>
+      ))}
     </div>
   );
 }

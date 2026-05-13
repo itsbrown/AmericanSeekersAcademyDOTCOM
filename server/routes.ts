@@ -55,7 +55,15 @@ async function addHubSpotContact(email: string, name: string, extraProperties?: 
   }
 }
 
-async function sendTransactionalEmail(to: string, toName: string, subject: string, htmlContent: string) {
+interface HubSpotSendResult {
+  sendId?: string;
+  statusId?: string;
+  requestedAt?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+async function sendTransactionalEmail(to: string, toName: string, subject: string, htmlContent: string): Promise<HubSpotSendResult> {
   const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
     throw new Error("HUBSPOT_API not configured");
@@ -65,6 +73,8 @@ async function sendTransactionalEmail(to: string, toName: string, subject: strin
   if (!emailId) {
     throw new Error("HUBSPOT_TRANSACTIONAL_EMAIL_ID not configured");
   }
+
+  const sendId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   // HubSpot Single Send is template-based. Dynamic content is injected via
   // customProperties tokens. The referenced HubSpot template must include:
@@ -81,7 +91,7 @@ async function sendTransactionalEmail(to: string, toName: string, subject: strin
       message: {
         from: "contact@americanseekersacademy.com",
         to,
-        sendId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sendId,
         replyTo: ["contact@americanseekersacademy.com"],
       },
       contactProperties: {
@@ -103,11 +113,11 @@ async function sendTransactionalEmail(to: string, toName: string, subject: strin
   return response.json();
 }
 
-async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }) {
+async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }): Promise<HubSpotSendResult | null> {
   const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
     console.log("HUBSPOT_API not configured - skipping contact inquiry notification");
-    return;
+    return null;
   }
 
   const htmlContent = `
@@ -134,23 +144,21 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
     </html>
   `;
 
-  try {
-    await sendTransactionalEmail(
-      "contact@americanseekersacademy.com",
-      "American Seekers Academy",
-      `New Contact Inquiry from ${inquiry.name}`,
-      htmlContent
-    );
-  } catch (err) {
-    console.error("Failed to send contact inquiry notification:", err);
-  }
+  const result = await sendTransactionalEmail(
+    "contact@americanseekersacademy.com",
+    "American Seekers Academy",
+    `New Contact Inquiry from ${inquiry.name}`,
+    htmlContent
+  );
+  console.log(`[email] contact-inquiry notification sent — statusId=${result.statusId ?? "unknown"} sendId=${result.sendId ?? "unknown"}`);
+  return result;
 }
 
-async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }) {
+async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }): Promise<HubSpotSendResult | null> {
   const apiKey = process.env.HUBSPOT_API;
   if (!apiKey) {
     console.log("HUBSPOT_API not configured - skipping location suggestion notification");
-    return;
+    return null;
   }
 
   const htmlContent = `
@@ -176,16 +184,14 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
     </html>
   `;
 
-  try {
-    await sendTransactionalEmail(
-      "contact@americanseekersacademy.com",
-      "American Seekers Academy",
-      `New Location Suggestion: ${suggestion.location}`,
-      htmlContent
-    );
-  } catch (err) {
-    console.error("Failed to send location suggestion notification:", err);
-  }
+  const result = await sendTransactionalEmail(
+    "contact@americanseekersacademy.com",
+    "American Seekers Academy",
+    `New Location Suggestion: ${suggestion.location}`,
+    htmlContent
+  );
+  console.log(`[email] location-suggestion notification sent — statusId=${result.statusId ?? "unknown"} sendId=${result.sendId ?? "unknown"}`);
+  return result;
 }
 
 async function sendProgramInfoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
@@ -589,6 +595,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, subscriptions });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to retrieve newsletter subscriptions" });
+    }
+  });
+
+  // Admin email config status (read-only, no email sent)
+  app.get("/api/admin/email-status", requireAdmin as any, async (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      hubspotApiConfigured: !!process.env.HUBSPOT_API,
+      hubspotEmailIdConfigured: !!process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID,
+    });
+  });
+
+  // Per-flow admin email test endpoints
+  // Each runs the SAME logic as the corresponding public form submission route,
+  // then persists the HubSpot send result (statusId, sendId) to the DB for audit.
+
+  // Flow: contact — mirrors POST /api/contact-inquiry
+  app.post("/api/admin/test-email/contact", requireAdmin as any, async (req: Request, res: Response) => {
+    const config = {
+      hubspotApiConfigured: !!process.env.HUBSPOT_API,
+      hubspotEmailIdConfigured: !!process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID,
+    };
+    if (!process.env.HUBSPOT_API || !process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID) {
+      res.json({ success: false, config, message: "Missing HubSpot secrets — see configuration status." });
+      return;
+    }
+
+    const testInquiry = {
+      name: "[TEST] Admin Verification",
+      email: "admin-test@americanseekersacademy.com",
+      phone: "555-000-0000",
+      message: "[ADMIN TEST] End-to-end delivery check triggered from admin dashboard. No action needed.",
+      phoneOptOut: false,
+    };
+
+    // Save to DB exactly as the real route does
+    await storage.createContactInquiry(testInquiry);
+
+    const sentTo = "contact@americanseekersacademy.com";
+    const sentAt = new Date().toISOString();
+
+    let hubspotResult: HubSpotSendResult | null = null;
+    let errorMessage: string | null = null;
+
+    try {
+      hubspotResult = await sendContactInquiryNotification(testInquiry);
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+    }
+
+    const run = await storage.createEmailTestRun({
+      flow: "contact",
+      sentTo,
+      hubspotStatusId: hubspotResult?.statusId ?? null,
+      hubspotSendId: hubspotResult?.sendId ?? null,
+      apiAccepted: !!hubspotResult,
+      errorMessage,
+      sentAt,
+      inboxConfirmedAt: null,
+      confirmedBy: null,
+    });
+
+    res.json({
+      success: !!hubspotResult,
+      config,
+      run,
+      sentTo,
+      message: hubspotResult
+        ? `HubSpot accepted the contact notification email (statusId: ${hubspotResult.statusId ?? "N/A"}). Check contact@americanseekersacademy.com inbox to confirm delivery, then mark it confirmed below.`
+        : `HubSpot API call failed: ${errorMessage}`,
+      hubspotResponse: hubspotResult,
+    });
+  });
+
+  // Flow: location — mirrors POST /api/location-suggestions
+  app.post("/api/admin/test-email/location", requireAdmin as any, async (req: Request, res: Response) => {
+    const config = {
+      hubspotApiConfigured: !!process.env.HUBSPOT_API,
+      hubspotEmailIdConfigured: !!process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID,
+    };
+    if (!process.env.HUBSPOT_API || !process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID) {
+      res.json({ success: false, config, message: "Missing HubSpot secrets — see configuration status." });
+      return;
+    }
+
+    const testSuggestion = {
+      name: "[TEST] Admin Verification",
+      email: "admin-test@americanseekersacademy.com",
+      location: "Test City, Test State (admin delivery check)",
+      comments: "[ADMIN TEST] Automated end-to-end delivery check. No action needed.",
+    };
+
+    // Save to DB exactly as the real route does
+    await storage.createLocationSuggestion(testSuggestion);
+
+    const sentTo = "contact@americanseekersacademy.com";
+    const sentAt = new Date().toISOString();
+    let hubspotResult: HubSpotSendResult | null = null;
+    let errorMessage: string | null = null;
+
+    try {
+      hubspotResult = await sendLocationSuggestionNotification(testSuggestion);
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+    }
+
+    const run = await storage.createEmailTestRun({
+      flow: "location",
+      sentTo,
+      hubspotStatusId: hubspotResult?.statusId ?? null,
+      hubspotSendId: hubspotResult?.sendId ?? null,
+      apiAccepted: !!hubspotResult,
+      errorMessage,
+      sentAt,
+      inboxConfirmedAt: null,
+      confirmedBy: null,
+    });
+
+    res.json({
+      success: !!hubspotResult,
+      config,
+      run,
+      sentTo,
+      message: hubspotResult
+        ? `HubSpot accepted the location suggestion email (statusId: ${hubspotResult.statusId ?? "N/A"}). Check contact@americanseekersacademy.com to confirm delivery, then mark it confirmed below.`
+        : `HubSpot API call failed: ${errorMessage}`,
+      hubspotResponse: hubspotResult,
+    });
+  });
+
+  // Flow: program — mirrors POST /api/program-info-request
+  app.post("/api/admin/test-email/program", requireAdmin as any, async (req: Request, res: Response) => {
+    const { recipientEmail = "contact@americanseekersacademy.com" } = req.body as { recipientEmail?: string };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      res.status(400).json({ success: false, message: `Invalid email address: "${recipientEmail}"` });
+      return;
+    }
+
+    const config = {
+      hubspotApiConfigured: !!process.env.HUBSPOT_API,
+      hubspotEmailIdConfigured: !!process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID,
+    };
+    if (!process.env.HUBSPOT_API || !process.env.HUBSPOT_TRANSACTIONAL_EMAIL_ID) {
+      res.json({ success: false, config, message: "Missing HubSpot secrets — see configuration status." });
+      return;
+    }
+
+    const testRequest = {
+      name: "[TEST] Admin Verification",
+      email: recipientEmail,
+      phone: "555-000-0000",
+      programSlug: "seekers",
+      programName: "Seekers (Grades 3–5)",
+    };
+
+    // Save to DB exactly as the real route does
+    await storage.createProgramInfoRequest(testRequest);
+
+    const sentAt = new Date().toISOString();
+    let hubspotResult: HubSpotSendResult | null = null;
+    let errorMessage: string | null = null;
+
+    try {
+      hubspotResult = await sendProgramInfoEmail(
+        recipientEmail,
+        testRequest.name,
+        testRequest.programName,
+        testRequest.programSlug,
+        programPdfUrls[testRequest.programSlug] ?? "/pdfs/general.pdf"
+      );
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+    }
+
+    const run = await storage.createEmailTestRun({
+      flow: "program",
+      sentTo: recipientEmail,
+      hubspotStatusId: hubspotResult?.statusId ?? null,
+      hubspotSendId: hubspotResult?.sendId ?? null,
+      apiAccepted: !!hubspotResult,
+      errorMessage,
+      sentAt,
+      inboxConfirmedAt: null,
+      confirmedBy: null,
+    });
+
+    res.json({
+      success: !!hubspotResult,
+      config,
+      run,
+      sentTo: recipientEmail,
+      message: hubspotResult
+        ? `HubSpot accepted the program welcome email (statusId: ${hubspotResult.statusId ?? "N/A"}). Check ${recipientEmail} inbox to confirm delivery, then mark it confirmed below.`
+        : `HubSpot API call failed: ${errorMessage}`,
+      hubspotResponse: hubspotResult,
+    });
+  });
+
+  // Get all email test runs (server-side audit log)
+  app.get("/api/admin/email-test-runs", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const runs = await storage.getEmailTestRuns();
+      res.json({ success: true, runs });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to retrieve email test runs" });
+    }
+  });
+
+  // Mark a test run inbox-confirmed
+  app.post("/api/admin/email-test-runs/:id/confirm", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { confirmedBy = "admin" } = req.body as { confirmedBy?: string };
+      const run = await storage.confirmEmailTestRun(id, confirmedBy);
+      if (!run) {
+        res.status(404).json({ success: false, message: "Test run not found" });
+        return;
+      }
+      res.json({ success: true, run });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to confirm test run" });
     }
   });
 

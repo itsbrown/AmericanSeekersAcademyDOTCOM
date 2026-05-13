@@ -9,7 +9,8 @@ import {
   blogPosts, type BlogPost, type InsertBlogPost,
   pageViews, type PageView, type InsertPageView,
   adminSessions, type AdminSession,
-  announcements, type Announcement, type InsertAnnouncement
+  announcements, type Announcement, type InsertAnnouncement,
+  emailTestRuns, type EmailTestRun,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -65,6 +66,11 @@ export interface IStorage {
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
   updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
   deleteAnnouncement(id: number): Promise<boolean>;
+
+  // Email test run methods
+  createEmailTestRun(run: Omit<EmailTestRun, "id">): Promise<EmailTestRun>;
+  getEmailTestRuns(): Promise<EmailTestRun[]>;
+  confirmEmailTestRun(id: number, confirmedBy: string): Promise<EmailTestRun | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -310,6 +316,25 @@ export class DatabaseStorage implements IStorage {
   async deleteAnnouncement(id: number): Promise<boolean> {
     const result = await db.delete(announcements).where(eq(announcements.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Email test run methods
+  async createEmailTestRun(run: Omit<EmailTestRun, "id">): Promise<EmailTestRun> {
+    const [created] = await db.insert(emailTestRuns).values(run).returning();
+    return created;
+  }
+
+  async getEmailTestRuns(): Promise<EmailTestRun[]> {
+    return await db.select().from(emailTestRuns).orderBy(desc(emailTestRuns.sentAt));
+  }
+
+  async confirmEmailTestRun(id: number, confirmedBy: string): Promise<EmailTestRun | undefined> {
+    const [updated] = await db
+      .update(emailTestRuns)
+      .set({ inboxConfirmedAt: new Date().toISOString(), confirmedBy })
+      .where(eq(emailTestRuns.id, id))
+      .returning();
+    return updated;
   }
 }
 

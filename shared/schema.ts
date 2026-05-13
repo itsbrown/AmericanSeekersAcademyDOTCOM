@@ -146,6 +146,21 @@ export const adminSessions = pgTable("admin_sessions", {
 
 export type AdminSession = typeof adminSessions.$inferSelect;
 
+export const emailTestRuns = pgTable("email_test_runs", {
+  id: serial("id").primaryKey(),
+  flow: text("flow").notNull(),
+  sentTo: text("sent_to").notNull(),
+  hubspotStatusId: text("hubspot_status_id"),
+  hubspotSendId: text("hubspot_send_id"),
+  apiAccepted: boolean("api_accepted").notNull().default(false),
+  errorMessage: text("error_message"),
+  sentAt: text("sent_at").notNull(),
+  inboxConfirmedAt: text("inbox_confirmed_at"),
+  confirmedBy: text("confirmed_by"),
+});
+
+export type EmailTestRun = typeof emailTestRuns.$inferSelect;
+
 export const announcements = pgTable("announcements", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),

@@ -105,6 +105,7 @@ Current schema includes:
 - `programInfoRequests` - Program information requests (name, email, phone, programSlug, programName)
 - `contactInquiries` - Contact form submissions (name, email, phone, message)
 - `blogPosts` - Blog posts (title, slug, excerpt, content, featuredImage, published, publishedAt, createdAt)
+- `emailTestRuns` - Audit log of admin email delivery tests (flow, sentTo, hubspotStatusId, hubspotSendId, apiAccepted, errorMessage, sentAt, inboxConfirmedAt, confirmedBy)
 
 The storage layer uses an interface pattern (`IStorage`) with a `DatabaseStorage` implementation for PostgreSQL persistence.
 
@@ -167,6 +168,41 @@ Three email flows use HubSpot:
 3. Program info requests → welcome/PDF email sent to the parent
 
 Contact form submitters are also upserted as contacts in HubSpot CRM automatically.
+
+### HubSpot Portal Setup Requirements
+
+To have all three email flows deliver successfully, the following must be completed inside the HubSpot portal:
+
+**Private App Setup**
+1. Go to HubSpot → Settings → Integrations → Private Apps
+2. Create a private app (or confirm one exists) with these scopes:
+   - `transactional-email` (send transactional emails)
+   - `crm.objects.contacts.write` (upsert contacts from the contact form)
+3. Copy the access token (starts with `pat-`) and save it as `HUBSPOT_API` in Replit Secrets
+
+**Transactional Email Template**
+1. Go to HubSpot → Marketing → Email → Transactional
+2. Create (or confirm) a transactional email template
+3. The template subject line must contain: `{{ custom.subject }}`
+4. The template body must contain: `{{{ custom.html_content }}}` (triple braces for raw HTML)
+5. Copy the numeric template ID from the URL or template list and save as `HUBSPOT_TRANSACTIONAL_EMAIL_ID` in Replit Secrets
+6. Ensure transactional email is enabled for your HubSpot subscription (requires Marketing Hub or add-on)
+
+**Sending Domain**
+1. Go to HubSpot → Settings → Marketing → Email → Sending Domains
+2. Verify/authenticate a sending domain (the "from" domain used in `sendTransactionalEmail()`)
+3. Emails are sent as `"American Seekers Academy" <noreply@americanseekersacademy.com>`
+
+**Admin Email Delivery Verification (Email Health tab)**
+The admin dashboard at `/admin` → Email Health tab provides:
+- Live configuration status showing whether both secrets are set
+- Per-flow test buttons (Contact, Location, Program) that mirror the real public form submission flow exactly — saving a DB record and calling HubSpot
+- A server-persisted audit log (`email_test_runs` table) showing HubSpot `statusId`/`sendId` for each test
+- "Confirm Delivery" buttons to record human inbox verification with a timestamp, stored permanently in the database
+
+**API Endpoints for Email Audit**
+- `GET /api/admin/email-test-runs` — retrieve all email test run records
+- `POST /api/admin/email-test-runs/:id/confirm` — mark a specific run as inbox-confirmed
 
 ### Key NPM Packages
 - `drizzle-kit`: Database migrations and schema management
