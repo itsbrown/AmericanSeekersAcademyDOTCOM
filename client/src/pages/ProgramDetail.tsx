@@ -175,7 +175,7 @@ const ProgramDetail = () => {
                   {program.slug === "macaronis" && (
                     <div>
                       <h4 className="font-semibold text-sm text-neutral-500 mb-1">Hours</h4>
-                      <p>9:00 AM - 3:00 PM</p>
+                      <p>9:00 AM - 12:00 PM</p>
                     </div>
                   )}
                 </div>

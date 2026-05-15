@@ -58,7 +58,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1545558014-8692077e9b5c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A deep, personal connection with a mentor is a priceless gift for any child. At ASA, we believe the guidance of dedicated teachers is a cornerstone of traditional education that homeschooling families can embrace to enrich their child's growth. Our Macaroni Class (ages 6 months to 3 years) welcomes our youngest learners into a warm, nurturing academic setting designed to spark curiosity, encourage sensory exploration, and build foundational social skills. Beyond engaging lessons on numbers, letters, colors, and syllables, your child will delight in a vibrant morning filled with play, music, movement, obstacle courses, tumbling, classic stories, and enriching arts and crafts—all in just three hours, three days a week. With a consistent, rhythmic schedule, your little one will thrive in a thoughtfully crafted routine at ASA, brimming with exceptional educational activities and high-quality creative projects. Our co-op is purposefully designed for homeschooling families, striking a perfect balance between learning and living, and instilling a lifelong passion for discovery.",
-    pricing: { halfDay: null, fullDay: null, note: "Contact us for Macaroni pricing" }
+    pricing: { halfDay: 1050, fullDay: null }
   },
   {
     slug: "yankee-doodle",
