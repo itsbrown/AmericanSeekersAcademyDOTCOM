@@ -83,7 +83,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Yankee Doodles class (ages 4–5, PreK–K) builds foundational skills through a classical education model, emphasizing literacy, counting, and responsibility. Hands-on, kinesthetic activities engage young learners, fostering a love for learning and civic virtue. The program supports homeschooling families by providing a structured yet flexible curriculum. Using Literacy Essentials, Primary Phonics, Dimensions Math, and resources like Tuttle Twins and Our America (Abeka), students master short vowel sounds, decode CVC words, count to 10, perform basic addition, and understand American symbols and figures.",
-    pricing: { halfDay: 900, fullDay: 1300 }
+    pricing: { halfDay: 1050, fullDay: 1500 }
   },
   {
     slug: "tycoons",
@@ -108,7 +108,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1629196911514-cfd65aa4a048?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Tycoons class (grades 1–2) dives into Literacy Essentials building a strong foundation necessary for developing reading and writing skills. Throughout a 3 hour period, 3 days a week, students receive in person instruction using structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery.",
-    pricing: { halfDay: 900, fullDay: 1300 }
+    pricing: { halfDay: 1050, fullDay: 1500 }
   },
   {
     slug: "seekers",
@@ -133,7 +133,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1525373698358-041e3a460346?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Seekers class (grades 3–5) goes deeper into liberal arts, sharpening their reading and writing skills while pushing them intellectually throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery.",
-    pricing: { halfDay: 900, fullDay: 1300 }
+    pricing: { halfDay: 1050, fullDay: 1500 }
   },
   {
     slug: "pioneers",
@@ -158,7 +158,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1509062522246-3755977927d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Pioneers class (grades 6–8) challenges students intellectually and philosophically throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery.",
-    pricing: { halfDay: 900, fullDay: 1300 }
+    pricing: { halfDay: 1050, fullDay: 1500 }
   },
   {
     slug: "patriots",
@@ -183,7 +183,7 @@ export const programs: Program[] = [
     ihipHours: "180-450 hours/year",
     imageUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
     longDescription: "A meaningful, human connection with a teacher is an invaluable benefit to a child. We believe mentors are a necessary attribute of the traditional school model that homeschoolers can greatly benefit from. The Patriots class (grades 9–12) prepares students for intellectual and civic leadership throughout a 3 hour period, 3 days a week with structured curricula that covers all common subjects and highlights America's founding principles. In a positive and social environment, the ASA model emphasizes self-governance, critical thinking and entrepreneurship. With day to day consistency and rhythm, your child will benefit from a well rounded routine created with exceptional educational activities and quality arts & crafts. Designed for homeschooling families, this program balances learning and living, inspiring children for a lifelong love of discovery.",
-    pricing: { halfDay: 900, fullDay: 1300 }
+    pricing: { halfDay: 1050, fullDay: 1500 }
   }
 ];
 
@@ -333,11 +333,11 @@ export const locations = [
   {
     name: "Brighton Campus",
     address: "",
-    hours: "Monday, Wednesday, Friday 9am-2pm"
+    hours: "Monday, Wednesday, Friday 9am-3pm"
   },
   {
     name: "Greece Campus",
     address: "",
-    hours: "Monday, Wednesday, Friday 9am-2pm"
+    hours: "Monday, Wednesday, Friday 9am-3pm"
   }
 ];

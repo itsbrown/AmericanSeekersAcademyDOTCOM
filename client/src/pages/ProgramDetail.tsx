@@ -125,7 +125,7 @@ const ProgramDetail = () => {
                   Extracurriculars
                 </h2>
                 <p className="text-muted-foreground mb-6">
-                  Full-day students (9:00 AM - 2:00 PM) enjoy a variety of enriching extracurricular activities during the afternoon session.
+                  Full-day students (9:00 AM - 3:00 PM) enjoy a variety of enriching extracurricular activities during the afternoon session.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {extracurriculars.map((activity, index) => (
@@ -175,7 +175,7 @@ const ProgramDetail = () => {
                   {program.slug === "macaronis" && (
                     <div>
                       <h4 className="font-semibold text-sm text-neutral-500 mb-1">Hours</h4>
-                      <p>9:00 AM - 2:00 PM</p>
+                      <p>9:00 AM - 3:00 PM</p>
                     </div>
                   )}
                 </div>
@@ -210,7 +210,7 @@ const ProgramDetail = () => {
                             <span className="font-semibold">Full Day</span>
                             <span className="text-xs bg-accent text-white px-2 py-0.5 rounded-full">Popular</span>
                           </div>
-                          <p className="text-sm text-neutral-600 mb-2">9:00 AM - 2:00 PM</p>
+                          <p className="text-sm text-neutral-600 mb-2">9:00 AM - 3:00 PM</p>
                           <p className="text-2xl font-bold text-accent">${program.pricing.fullDay.toLocaleString()}</p>
                           <p className="text-xs text-neutral-500">per 10-week session</p>
                           <p className="text-xs text-accent mt-2 font-medium flex items-center gap-1">
