@@ -1233,12 +1233,22 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: ["/api/admin/announcements"] });
-      queryClient.refetchQueries({ queryKey: ["/api/announcements"] });
+    onMutate: async ({ id, field, value }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/announcements"] });
+      const previous = queryClient.getQueryData<{ success: boolean; announcements: Announcement[] }>(["/api/admin/announcements"]);
+      queryClient.setQueryData<{ success: boolean; announcements: Announcement[] }>(
+        ["/api/admin/announcements"],
+        (old) => old ? { ...old, announcements: old.announcements.map((a) => a.id === id ? { ...a, [field]: value } : a) } : old
+      );
+      return { previous };
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(["/api/admin/announcements"], context.previous);
       toast({ title: "Failed to update announcement", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     },
   });
 
