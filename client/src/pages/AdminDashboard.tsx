@@ -1139,6 +1139,7 @@ function HubSpotSetupChecklist() {
 function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => HeadersInit; onLogout: () => void }) {
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [displayList, setDisplayList] = useState<Announcement[]>([]);
 
   const handleUnauthorized = (res: Response) => {
     if (res.status === 401) {
@@ -1158,6 +1159,12 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
     },
     retry: false,
   });
+
+  useEffect(() => {
+    if (announcementsQuery.data?.announcements) {
+      setDisplayList(announcementsQuery.data.announcements);
+    }
+  }, [announcementsQuery.data?.announcements]);
 
   const createForm = useForm<InsertAnnouncement>({
     resolver: zodResolver(insertAnnouncementSchema),
@@ -1233,21 +1240,18 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    onMutate: async ({ id, field, value }) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/admin/announcements"] });
-      const previous = queryClient.getQueryData<{ success: boolean; announcements: Announcement[] }>(["/api/admin/announcements"]);
-      queryClient.setQueryData<{ success: boolean; announcements: Announcement[] }>(
-        ["/api/admin/announcements"],
-        (old) => old ? { ...old, announcements: old.announcements.map((a) => a.id === id ? { ...a, [field]: value } : a) } : old
-      );
+    onMutate: ({ id, field, value }) => {
+      const previous = displayList.find((a) => a.id === id);
+      setDisplayList((prev) => prev.map((a) => a.id === id ? { ...a, [field]: value } : a));
       return { previous };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(["/api/admin/announcements"], context.previous);
+    onError: (_err, { id }, context) => {
+      if (context?.previous) {
+        setDisplayList((prev) => prev.map((a) => a.id === id ? context.previous! : a));
+      }
       toast({ title: "Failed to update announcement", variant: "destructive" });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     },
   });
@@ -1438,11 +1442,11 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
         <CardContent>
           {announcementsQuery.isLoading ? (
             <Skeleton className="h-32 w-full" />
-          ) : (announcementsQuery.data?.announcements?.length ?? 0) === 0 ? (
+          ) : displayList.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No announcements yet.</p>
           ) : (
             <div className="space-y-4">
-              {announcementsQuery.data?.announcements?.map((a) =>
+              {displayList.map((a) =>
                 editingId === a.id ? (
                   <Card key={a.id} className="border-[#1e3a5f]">
                     <CardContent className="pt-4">
