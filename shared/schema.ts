@@ -168,6 +168,7 @@ export const announcements = pgTable("announcements", {
   type: text("type").notNull(),
   published: boolean("published").notNull().default(false),
   pinned: boolean("pinned").notNull().default(false),
+  url: text("url"),
   createdAt: text("created_at").notNull(),
 });
 
@@ -199,6 +200,7 @@ export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
   createdAt: true,
 }).extend({
   type: z.enum(announcementTypeEnum),
+  url: z.string().url().optional().or(z.literal("")),
 });
 
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;

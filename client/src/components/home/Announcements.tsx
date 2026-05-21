@@ -40,8 +40,8 @@ const Announcements = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {announcements.map((announcement) => (
-            <Card key={announcement.id} className={`border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"}`}>
+          {announcements.map((announcement) => {
+            const inner = (
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -61,9 +61,34 @@ const Announcements = () => {
                 </div>
                 <h3 className="font-serif font-semibold text-[#1e3a5f] text-lg mb-2">{announcement.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{announcement.content}</p>
+                {announcement.url && (
+                  <p className="text-xs text-[#1e3a5f] font-medium mt-3 flex items-center gap-1 opacity-70">
+                    Learn more →
+                  </p>
+                )}
               </CardContent>
-            </Card>
-          ))}
+            );
+
+            const cardClass = `border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"}`;
+
+            return announcement.url ? (
+              <a
+                key={announcement.id}
+                href={announcement.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] rounded-lg"
+              >
+                <Card className={`${cardClass} hover:shadow-lg hover:border-[#1e3a5f] transition-all duration-200 cursor-pointer`}>
+                  {inner}
+                </Card>
+              </a>
+            ) : (
+              <Card key={announcement.id} className={cardClass}>
+                {inner}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>

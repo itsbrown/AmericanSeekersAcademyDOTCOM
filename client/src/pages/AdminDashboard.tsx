@@ -1194,7 +1194,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
-      createForm.reset({ title: "", content: "", type: "general", published: false, pinned: false });
+      createForm.reset({ title: "", content: "", type: "general", published: false, pinned: false, url: "" });
       toast({ title: "Announcement created" });
     },
     onError: () => {
@@ -1269,6 +1269,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       type: a.type as InsertAnnouncement["type"],
       published: a.published,
       pinned: a.pinned,
+      url: a.url ?? "",
     });
   };
 
@@ -1321,6 +1322,19 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                     <FormLabel>Content</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Announcement content" rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link URL <span className="text-gray-400 font-normal">(optional — makes card clickable)</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://..." {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1448,6 +1462,19 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                                 <FormLabel>Content</FormLabel>
                                 <FormControl>
                                   <Textarea rows={3} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editForm.control}
+                            name="url"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Link URL <span className="text-gray-400 font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                  <Input placeholder="https://..." {...field} value={field.value ?? ""} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
