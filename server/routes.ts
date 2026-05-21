@@ -928,9 +928,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const entry = await storage.createRegistrationWaitlistEntry(validatedData);
 
       // Send confirmation email to the sign-up (don't block on this)
-      sendWaitlistConfirmationEmail(validatedData).catch(err => {
-        console.error("Failed to send waitlist confirmation email:", err);
-      });
+      sendWaitlistConfirmationEmail(validatedData)
+        .then(() => console.log(`[waitlist] confirmation email sent to ${validatedData.email}`))
+        .catch(err => {
+          console.error(`[waitlist] email FAILED to ${validatedData.email} — code: ${err?.code} body: ${JSON.stringify(err?.response?.body)}`);
+        });
 
       res.status(201).json({ success: true, entry });
     } catch (error) {
