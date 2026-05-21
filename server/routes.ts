@@ -954,6 +954,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/contacts/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const items = await storage.getContactInquiries();
+      const header = "ID,Name,Email,Phone,No Phone Contact,Message,Date\n";
+      const rows = items.map(e => [
+        e.id,
+        `"${(e.name || "").replace(/"/g, '""')}"`,
+        `"${(e.email || "").replace(/"/g, '""')}"`,
+        `"${(e.phone || "").replace(/"/g, '""')}"`,
+        e.phoneOptOut ? "Yes" : "No",
+        `"${(e.message || "").replace(/"/g, '""')}"`,
+        `"${new Date(e.createdAt).toLocaleString()}"`,
+      ].join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"contacts.csv\"");
+      res.send(header + rows);
+    } catch { res.status(500).json({ success: false, message: "Failed to export contacts" }); }
+  });
+
+  app.get("/api/admin/locations/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const items = await storage.getLocationSuggestions();
+      const header = "ID,Name,Email,Suggested Location,Comments,Date\n";
+      const rows = items.map(e => [
+        e.id,
+        `"${(e.name || "").replace(/"/g, '""')}"`,
+        `"${(e.email || "").replace(/"/g, '""')}"`,
+        `"${(e.location || "").replace(/"/g, '""')}"`,
+        `"${(e.comments || "").replace(/"/g, '""')}"`,
+        `"${new Date(e.createdAt).toLocaleString()}"`,
+      ].join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"location-suggestions.csv\"");
+      res.send(header + rows);
+    } catch { res.status(500).json({ success: false, message: "Failed to export locations" }); }
+  });
+
+  app.get("/api/admin/programs/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const items = await storage.getProgramInfoRequests();
+      const header = "ID,Name,Email,Phone,Program,Date\n";
+      const rows = items.map(e => [
+        e.id,
+        `"${(e.name || "").replace(/"/g, '""')}"`,
+        `"${(e.email || "").replace(/"/g, '""')}"`,
+        `"${(e.phone || "").replace(/"/g, '""')}"`,
+        `"${(e.programName || "").replace(/"/g, '""')}"`,
+        `"${new Date(e.createdAt).toLocaleString()}"`,
+      ].join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"program-requests.csv\"");
+      res.send(header + rows);
+    } catch { res.status(500).json({ success: false, message: "Failed to export program requests" }); }
+  });
+
+  app.get("/api/admin/newsletters/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+    try {
+      const items = await storage.getNewsletterSubscriptions();
+      const header = "ID,Email,Date\n";
+      const rows = items.map(e => [
+        e.id,
+        `"${(e.email || "").replace(/"/g, '""')}"`,
+        `"${new Date(e.createdAt).toLocaleString()}"`,
+      ].join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"newsletters.csv\"");
+      res.send(header + rows);
+    } catch { res.status(500).json({ success: false, message: "Failed to export newsletters" }); }
+  });
+
   app.get("/api/admin/registration-waitlist/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const entries = await storage.getRegistrationWaitlistEntries();

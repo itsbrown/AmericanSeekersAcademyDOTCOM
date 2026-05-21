@@ -166,6 +166,18 @@ export default function AdminDashboard() {
   return <AuthenticatedDashboard onLogout={handleLogout} />;
 }
 
+function downloadCsv(url: string, filename: string, getAuthHeaders: () => HeadersInit) {
+  fetch(url, { headers: getAuthHeaders() })
+    .then(r => r.blob())
+    .then(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+}
+
 function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
   const handleUnauthorized = (res: Response) => {
     if (res.status === 401) {
@@ -352,10 +364,15 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="contacts">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Contact Inquiries
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Contact Inquiries
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/contacts/export.csv", "contacts.csv", getAuthHeaders)}>
+                    <Download className="w-4 h-4" /> Export CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {contactsQuery.isLoading ? (
@@ -395,10 +412,15 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="locations">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Location Suggestions
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Location Suggestions
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/locations/export.csv", "location-suggestions.csv", getAuthHeaders)}>
+                    <Download className="w-4 h-4" /> Export CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {locationsQuery.isLoading ? (
@@ -436,10 +458,15 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="programs">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5" />
-                  Program Info Requests
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5" />
+                    Program Info Requests
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/programs/export.csv", "program-requests.csv", getAuthHeaders)}>
+                    <Download className="w-4 h-4" /> Export CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {programsQuery.isLoading ? (
@@ -477,10 +504,15 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="newsletters">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  Newsletter Subscriptions
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    Newsletter Subscriptions
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/newsletters/export.csv", "newsletters.csv", getAuthHeaders)}>
+                    <Download className="w-4 h-4" /> Export CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {newslettersQuery.isLoading ? (
