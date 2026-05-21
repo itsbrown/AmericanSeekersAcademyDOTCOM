@@ -1234,8 +1234,8 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.refetchQueries({ queryKey: ["/api/announcements"] });
     },
     onError: () => {
       toast({ title: "Failed to update announcement", variant: "destructive" });
