@@ -209,6 +209,45 @@ async function sendProgramInfoEmail(to: string, name: string, programName: strin
   return sendTransactionalEmail(to, name, `${programName} Program Information - American Seekers Academy`, htmlContent);
 }
 
+async function sendWaitlistConfirmationEmail(entry: { name: string; email: string; programInterest?: string }): Promise<void> {
+  if (!process.env.SENDGRID_API_KEY) return;
+
+  const programLabel = entry.programInterest
+    ? entry.programInterest.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+    : null;
+
+  const htmlContent = `
+    <html>
+      <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f; margin: 0; padding: 0;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 0;">
+          <div style="background-color: #1e3a5f; padding: 32px 40px; text-align: center;">
+            <h1 style="color: #ffffff; font-size: 28px; margin: 0 0 4px 0;">American Seekers Academy</h1>
+            <p style="color: #c4a052; margin: 0; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">Fall 2026 Registration</p>
+          </div>
+          <div style="padding: 40px; background-color: #ffffff;">
+            <h2 style="color: #1e3a5f; margin-top: 0;">You're on the waitlist, ${entry.name.split(" ")[0]}!</h2>
+            <p>Thank you for your interest in American Seekers Academy. We've saved your spot on the <strong>Fall 2026 Registration Waitlist</strong>.</p>
+            <div style="background-color: #f5f0e8; border-left: 4px solid #c4a052; padding: 16px 20px; border-radius: 4px; margin: 24px 0;">
+              <p style="margin: 0 0 8px 0;"><strong>Registration Opens:</strong> May 27, 2026</p>
+              ${programLabel ? `<p style="margin: 0;"><strong>Program Interest:</strong> ${programLabel}</p>` : ""}
+            </div>
+            <p>We'll reach out to you directly on <strong>May 27th</strong> so you can be among the first to secure your family's spot before classes fill up.</p>
+            <p>In the meantime, feel free to explore our programs and curriculum at <a href="https://americanseekersacademy.com" style="color: #c4a052;">americanseekersacademy.com</a>.</p>
+            <p style="margin-top: 32px;">We look forward to welcoming your family,</p>
+            <p><strong>The American Seekers Academy Team</strong><br>
+            <em style="color: #888;">"Learn Better. Make Friends. Live Well."</em></p>
+          </div>
+          <div style="background-color: #f5f0e8; padding: 20px 40px; text-align: center;">
+            <p style="color: #888; font-size: 12px; margin: 0;">Questions? Reply to this email or contact us at <a href="mailto:contact@americanseekersacademy.com" style="color: #c4a052;">contact@americanseekersacademy.com</a></p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await sendTransactionalEmail(entry.email, entry.name, "You're on the Fall 2026 Waitlist — American Seekers Academy", htmlContent);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // External redirects
   app.get("/login", (_req: Request, res: Response) => {
@@ -887,6 +926,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertRegistrationWaitlistSchema.parse(req.body);
       const entry = await storage.createRegistrationWaitlistEntry(validatedData);
+
+      // Send confirmation email to the sign-up (don't block on this)
+      sendWaitlistConfirmationEmail(validatedData).catch(err => {
+        console.error("Failed to send waitlist confirmation email:", err);
+      });
+
       res.status(201).json({ success: true, entry });
     } catch (error) {
       if (error instanceof z.ZodError) {
