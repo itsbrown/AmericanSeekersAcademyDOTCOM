@@ -11,6 +11,7 @@ import {
   adminSessions, type AdminSession,
   announcements, type Announcement, type InsertAnnouncement,
   emailTestRuns, type EmailTestRun,
+  registrationWaitlist, type RegistrationWaitlistEntry, type InsertRegistrationWaitlist,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -71,6 +72,10 @@ export interface IStorage {
   createEmailTestRun(run: Omit<EmailTestRun, "id">): Promise<EmailTestRun>;
   getEmailTestRuns(): Promise<EmailTestRun[]>;
   confirmEmailTestRun(id: number, confirmedBy: string): Promise<EmailTestRun | undefined>;
+
+  // Registration waitlist methods
+  createRegistrationWaitlistEntry(entry: InsertRegistrationWaitlist): Promise<RegistrationWaitlistEntry>;
+  getRegistrationWaitlistEntries(): Promise<RegistrationWaitlistEntry[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -335,6 +340,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailTestRuns.id, id))
       .returning();
     return updated;
+  }
+
+  // Registration waitlist methods
+  async createRegistrationWaitlistEntry(entry: InsertRegistrationWaitlist): Promise<RegistrationWaitlistEntry> {
+    const [created] = await db.insert(registrationWaitlist).values({
+      ...entry,
+      createdAt: new Date().toISOString(),
+    }).returning();
+    return created;
+  }
+
+  async getRegistrationWaitlistEntries(): Promise<RegistrationWaitlistEntry[]> {
+    return await db.select().from(registrationWaitlist).orderBy(desc(registrationWaitlist.createdAt));
   }
 }
 

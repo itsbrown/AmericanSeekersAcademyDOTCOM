@@ -42,9 +42,7 @@ const SessionCalendar = () => {
 
         <div className="text-center mt-10">
           <a
-            href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#registration-waitlist"
             className="inline-block bg-[#c4a052] hover:bg-[#b3903f] text-white px-8 py-3 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200"
           >
             Register Now

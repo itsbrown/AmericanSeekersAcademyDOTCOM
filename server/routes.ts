@@ -4,7 +4,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import sgMail from "@sendgrid/mail";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema, insertRegistrationWaitlistSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 const programPdfUrls: Record<string, string> = {
@@ -879,6 +879,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to delete announcement" });
+    }
+  });
+
+  // Registration waitlist routes
+  app.post("/api/registration-waitlist", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertRegistrationWaitlistSchema.parse(req.body);
+      const entry = await storage.createRegistrationWaitlistEntry(validatedData);
+      res.status(201).json({ success: true, entry });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        res.status(400).json({ success: false, message: validationError.message });
+      } else {
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+      }
+    }
+  });
+
+  app.get("/api/admin/registration-waitlist", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const entries = await storage.getRegistrationWaitlistEntries();
+      res.json({ success: true, entries });
+    } catch {
+      res.status(500).json({ success: false, message: "Failed to retrieve waitlist" });
+    }
+  });
+
+  app.get("/api/admin/registration-waitlist/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const entries = await storage.getRegistrationWaitlistEntries();
+      const header = "ID,Name,Email,Phone,Program Interest,Signed Up At\n";
+      const rows = entries.map(e =>
+        [
+          e.id,
+          `"${(e.name || "").replace(/"/g, '""')}"`,
+          `"${(e.email || "").replace(/"/g, '""')}"`,
+          `"${(e.phone || "").replace(/"/g, '""')}"`,
+          `"${(e.programInterest || "").replace(/"/g, '""')}"`,
+          `"${new Date(e.createdAt).toLocaleString()}"`,
+        ].join(",")
+      ).join("\n");
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"registration-waitlist.csv\"");
+      res.send(header + rows);
+    } catch {
+      res.status(500).json({ success: false, message: "Failed to export waitlist" });
     }
   });
 

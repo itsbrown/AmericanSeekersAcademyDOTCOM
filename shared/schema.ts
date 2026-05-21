@@ -171,6 +171,26 @@ export const announcements = pgTable("announcements", {
   createdAt: text("created_at").notNull(),
 });
 
+export const registrationWaitlist = pgTable("registration_waitlist", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  programInterest: text("program_interest"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertRegistrationWaitlistSchema = createInsertSchema(registrationWaitlist).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  phone: z.string().optional(),
+  programInterest: z.string().optional(),
+});
+
+export type InsertRegistrationWaitlist = z.infer<typeof insertRegistrationWaitlistSchema>;
+export type RegistrationWaitlistEntry = typeof registrationWaitlist.$inferSelect;
+
 export const announcementTypeEnum = ["general", "new-class", "update"] as const;
 export type AnnouncementType = typeof announcementTypeEnum[number];
 

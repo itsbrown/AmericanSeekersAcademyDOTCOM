@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle } from "lucide-react";
+import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertAnnouncementSchema, type InsertAnnouncement, type Announcement } from "@shared/schema";
-import type { ContactInquiry, LocationSuggestion, ProgramInfoRequest, Newsletter, PageView } from "@shared/schema";
+import type { ContactInquiry, LocationSuggestion, ProgramInfoRequest, Newsletter, PageView, RegistrationWaitlistEntry } from "@shared/schema";
 
 const AUTH_TOKEN_KEY = "admin_token";
 
@@ -231,6 +231,15 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
     retry: false,
   });
 
+  const waitlistQuery = useQuery<{ success: boolean; entries: RegistrationWaitlistEntry[] }>({
+    queryKey: ["/api/admin/registration-waitlist"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/registration-waitlist", { headers: getAuthHeaders() });
+      return handleUnauthorized(res);
+    },
+    retry: false,
+  });
+
   const stats = statsQuery.data?.stats;
 
   return (
@@ -288,6 +297,10 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
             <TabsTrigger value="email-health" className="flex items-center gap-2" data-testid="tab-email-health">
               <ShieldCheck className="w-4 h-4" />
               Email Health
+            </TabsTrigger>
+            <TabsTrigger value="waitlist" className="flex items-center gap-2" data-testid="tab-waitlist">
+              <ClipboardList className="w-4 h-4" />
+              Waitlist
             </TabsTrigger>
           </TabsList>
 
@@ -572,6 +585,82 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
 
           <TabsContent value="email-health">
             <EmailHealthTab getAuthHeaders={getAuthHeaders} />
+          </TabsContent>
+
+          <TabsContent value="waitlist">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="font-serif text-xl text-[#1e3a5f] flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5" />
+                    Fall 2026 Registration Waitlist
+                  </CardTitle>
+                  <a
+                    href={`/api/admin/registration-waitlist/export.csv?token=${localStorage.getItem("admin_token")}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const token = localStorage.getItem("admin_token");
+                      fetch("/api/admin/registration-waitlist/export.csv", {
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                        .then(r => r.blob())
+                        .then(blob => {
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = "registration-waitlist.csv";
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        });
+                    }}
+                  >
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      Export CSV
+                    </Button>
+                  </a>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {waitlistQuery.data?.entries.length ?? 0} families on the waitlist
+                </p>
+              </CardHeader>
+              <CardContent>
+                {waitlistQuery.isLoading ? (
+                  <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+                ) : !waitlistQuery.data?.entries.length ? (
+                  <p className="text-gray-500 text-sm py-4 text-center">No waitlist entries yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Program Interest</TableHead>
+                        <TableHead>Signed Up</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {waitlistQuery.data.entries.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell className="font-medium">{entry.name}</TableCell>
+                          <TableCell>{entry.email}</TableCell>
+                          <TableCell>{entry.phone || "—"}</TableCell>
+                          <TableCell>
+                            {entry.programInterest
+                              ? entry.programInterest.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="text-gray-500 text-sm">
+                            {new Date(entry.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
