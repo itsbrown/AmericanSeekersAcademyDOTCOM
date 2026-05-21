@@ -704,7 +704,7 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
     refetchInterval: false,
   });
 
-  const statusQuery = useQuery<{ success: boolean; hubspotApiConfigured: boolean; hubspotEmailIdConfigured: boolean }>({
+  const statusQuery = useQuery<{ success: boolean; sendgridApiConfigured: boolean }>({
     queryKey: ["/api/admin/email-status"],
     queryFn: async () => {
       const res = await fetch("/api/admin/email-status", { headers: getAuthHeaders() });
@@ -780,7 +780,7 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
   });
 
   const status = statusQuery.data;
-  const allConfigured = status?.hubspotApiConfigured && status?.hubspotEmailIdConfigured;
+  const allConfigured = status?.sendgridApiConfigured;
 
   const ConfigRow = ({ label, value }: { label: string; value: boolean | undefined }) => (
     <div className="flex items-center justify-between py-3 border-b last:border-0">
@@ -810,7 +810,7 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
             : <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />}
           <div className="flex-1 min-w-0 space-y-1">
             <p className={`text-sm font-medium ${r.success ? "text-green-700" : "text-red-700"}`}>
-              {r.success ? "HubSpot API accepted the request" : "API call failed — email was not sent"}
+              {r.success ? "SendGrid accepted the request" : "API call failed — email was not sent"}
             </p>
             <p className={`text-sm ${r.success ? "text-green-600" : "text-red-600"}`}>{r.message}</p>
             {r.success && (
@@ -818,14 +818,6 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
                 API acceptance does not guarantee inbox delivery. Open the inbox at{" "}
                 <strong>{r.sentTo}</strong> and confirm the email arrived to complete verification.
               </p>
-            )}
-            {r.hubspotResponse && (
-              <details className="mt-1">
-                <summary className="text-xs text-gray-500 cursor-pointer select-none">HubSpot API response</summary>
-                <pre className="mt-1 text-xs bg-white border rounded p-2 overflow-auto max-h-32 whitespace-pre-wrap">
-                  {JSON.stringify(r.hubspotResponse, null, 2)}
-                </pre>
-              </details>
             )}
           </div>
         </div>
@@ -839,20 +831,17 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5" />
-            HubSpot Configuration Status
+            SendGrid Configuration Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ConfigRow label="HUBSPOT_API secret" value={status?.hubspotApiConfigured} />
-          <ConfigRow label="HUBSPOT_TRANSACTIONAL_EMAIL_ID secret" value={status?.hubspotEmailIdConfigured} />
+          <ConfigRow label="SENDGRID_API_KEY secret" value={status?.sendgridApiConfigured} />
           {status && !allConfigured && (
             <div className="mt-4 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
               <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
               <p className="text-sm text-amber-700">
-                One or more secrets are missing. Add them in the Replit Secrets panel, then restart the server.
-                The HubSpot template must include <code className="bg-amber-100 px-1 rounded">{"{{ custom.subject }}"}</code> and{" "}
-                <code className="bg-amber-100 px-1 rounded">{"{{{ custom.html_content }}}"}</code> (triple braces) tokens, and the sender domain{" "}
-                <strong>americanseekersacademy.com</strong> must be verified in HubSpot (Settings → Domain Management).
+                <strong>SENDGRID_API_KEY</strong> is missing. Add it in the Replit Secrets panel and restart the server.
+                Emails are sent from <strong>noreply@americanseekersacademy.com</strong> — ensure this sender is verified in your SendGrid account (Settings → Sender Authentication).
               </p>
             </div>
           )}
@@ -860,7 +849,7 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
             <div className="mt-4 flex items-start gap-2 rounded-md bg-green-50 border border-green-200 p-3">
               <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
               <p className="text-sm text-green-700">
-                Both secrets are set. Use the per-flow tests below to confirm live delivery for each email path.
+                SendGrid API key is configured. Use the per-flow tests below to confirm live delivery for each email path.
               </p>
             </div>
           )}
@@ -974,25 +963,9 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            HubSpot Portal Setup Checklist
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-gray-500 mb-3">
-            Check off each item as you confirm it in the HubSpot portal. Saved in your browser.
-          </p>
-          <HubSpotSetupChecklist />
-        </CardContent>
-      </Card>
     </div>
   );
 }
-
-const CHECKLIST_KEY = "asa_hubspot_checklist";
 
 const FLOW_LABELS: Record<string, string> = {
   contact: "Contact Form Notification",
