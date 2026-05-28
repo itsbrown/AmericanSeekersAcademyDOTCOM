@@ -228,7 +228,9 @@ const ProgramDetail = () => {
                 <Separator className="my-6" />
                 
                 <a 
-                  href="/#registration-waitlist"
+                  href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full mb-4 inline-flex items-center justify-center bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-6 py-4 text-base font-bold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
                   data-testid="program-register-btn"
                 >

@@ -12,7 +12,6 @@ import FAQ from "@/components/home/FAQ";
 import CTA from "@/components/home/CTA";
 import SessionCalendar from "@/components/home/SessionCalendar";
 import Announcements from "@/components/home/Announcements";
-import RegistrationBanner from "@/components/home/RegistrationBanner";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
@@ -42,7 +41,6 @@ const Home = () => {
   return (
     <>
       <Hero />
-      <RegistrationBanner />
       <Announcements />
       <ChecklistSection />
       <VideoSection />

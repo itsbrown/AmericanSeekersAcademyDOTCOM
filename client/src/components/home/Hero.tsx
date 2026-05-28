@@ -59,7 +59,9 @@ const Hero = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <a 
-                href="#registration-waitlist"
+                href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-10 py-5 text-lg font-bold rounded-lg shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-2xl"
                 data-testid="hero-register-btn"
               >
