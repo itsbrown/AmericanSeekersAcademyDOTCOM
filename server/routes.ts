@@ -59,9 +59,15 @@ async function addHubSpotContact(email: string, name: string, extraProperties?: 
 interface EmailSendResult {
   sendId?: string;
   statusId?: string;
+  provider?: string;
+  error?: string;
   [key: string]: unknown;
 }
 
+/**
+ * Low-level SendGrid sender. Throws on missing key or hard failure.
+ * Prefer sendEmailSafe() for most call sites.
+ */
 async function sendTransactionalEmail(to: string, toName: string, subject: string, htmlContent: string): Promise<EmailSendResult> {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
@@ -83,15 +89,83 @@ async function sendTransactionalEmail(to: string, toName: string, subject: strin
     html: htmlContent,
   });
 
-  return { sendId, statusId: "accepted" };
+  return { sendId, statusId: "accepted", provider: "sendgrid" };
 }
 
-async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }): Promise<EmailSendResult | null> {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log("SENDGRID_API_KEY not configured - skipping contact inquiry notification");
-    return null;
+/**
+ * Safe email sender with:
+ * - Never throws (safe for fire-and-forget and admin test flows)
+ * - Consistent structured result
+ * - Basic retry (1 retry with short delay) for transient failures
+ * - Centralized logging with [email] prefix
+ */
+async function sendEmailSafe(params: {
+  to: string;
+  toName?: string;
+  subject: string;
+  htmlContent: string;
+  flow?: string; // e.g. "contact", "program", "waitlist"
+}): Promise<EmailSendResult & { success: boolean; provider: "sendgrid" }> {
+  const { to, toName = "", subject, htmlContent, flow = "unknown" } = params;
+  const apiKey = process.env.SENDGRID_API_KEY;
+
+  if (!apiKey) {
+    const msg = "SENDGRID_API_KEY not configured";
+    console.error(`[email] ${flow} FAILED: ${msg}`);
+    return { success: false, provider: "sendgrid", error: msg };
   }
 
+  const maxAttempts = 2; // 1 initial + 1 retry
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await sendTransactionalEmail(to, toName, subject, htmlContent);
+      console.log(
+        `[email] ${flow} sent — provider=sendgrid sendId=${result.sendId ?? "unknown"}`
+      );
+      return {
+        success: true,
+        provider: "sendgrid",
+        sendId: result.sendId,
+        statusId: result.statusId,
+      };
+    } catch (err) {
+      lastError = err;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      // Only retry on transient-ish errors (network / 5xx type)
+      const isTransient =
+        errorMessage.includes("ECONNRESET") ||
+        errorMessage.includes("ETIMEDOUT") ||
+        errorMessage.includes("503") ||
+        errorMessage.includes("502") ||
+        errorMessage.includes("504");
+
+      if (attempt < maxAttempts && isTransient) {
+        console.warn(`[email] ${flow} attempt ${attempt} failed (transient). Retrying...`);
+        await new Promise((r) => setTimeout(r, 600)); // short backoff
+        continue;
+      }
+
+      console.error(`[email] ${flow} FAILED after ${attempt} attempt(s):`, errorMessage);
+      return {
+        success: false,
+        provider: "sendgrid",
+        error: errorMessage,
+      };
+    }
+  }
+
+  // Should not reach here
+  return {
+    success: false,
+    provider: "sendgrid",
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  };
+}
+
+async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }): Promise<EmailSendResult> {
   const htmlContent = `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
@@ -116,22 +190,17 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
     </html>
   `;
 
-  const result = await sendTransactionalEmail(
-    "contact@americanseekersacademy.com",
-    "American Seekers Academy",
-    `New Contact Inquiry from ${inquiry.name}`,
-    htmlContent
-  );
-  console.log(`[email] contact-inquiry notification sent — statusId=${result.statusId ?? "unknown"} sendId=${result.sendId ?? "unknown"}`);
-  return result;
+  // Uses the safe wrapper (never throws, has retry + consistent logging)
+  return sendEmailSafe({
+    to: "contact@americanseekersacademy.com",
+    toName: "American Seekers Academy",
+    subject: `New Contact Inquiry from ${inquiry.name}`,
+    htmlContent,
+    flow: "contact",
+  });
 }
 
-async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }): Promise<EmailSendResult | null> {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.log("SENDGRID_API_KEY not configured - skipping location suggestion notification");
-    return null;
-  }
-
+async function sendLocationSuggestionNotification(suggestion: { name: string; email: string; location: string; comments?: string | null }): Promise<EmailSendResult> {
   const htmlContent = `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f;">
@@ -155,21 +224,16 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
     </html>
   `;
 
-  const result = await sendTransactionalEmail(
-    "contact@americanseekersacademy.com",
-    "American Seekers Academy",
-    `New Location Suggestion: ${suggestion.location}`,
-    htmlContent
-  );
-  console.log(`[email] location-suggestion notification sent — statusId=${result.statusId ?? "unknown"} sendId=${result.sendId ?? "unknown"}`);
-  return result;
+  return sendEmailSafe({
+    to: "contact@americanseekersacademy.com",
+    toName: "American Seekers Academy",
+    subject: `New Location Suggestion: ${suggestion.location}`,
+    htmlContent,
+    flow: "location",
+  });
 }
 
-async function sendProgramInfoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string) {
-  if (!process.env.SENDGRID_API_KEY) {
-    throw new Error("SENDGRID_API_KEY not configured");
-  }
-
+async function sendProgramInfoEmail(to: string, name: string, programName: string, programSlug: string, pdfUrl: string): Promise<EmailSendResult> {
   const baseUrl = process.env.NODE_ENV === 'production'
     ? 'https://americanseekersacademy.com'
     : process.env.REPLIT_DEV_DOMAIN 
@@ -206,12 +270,16 @@ async function sendProgramInfoEmail(to: string, name: string, programName: strin
     </html>
   `;
 
-  return sendTransactionalEmail(to, name, `${programName} Program Information - American Seekers Academy`, htmlContent);
+  return sendEmailSafe({
+    to,
+    toName: name,
+    subject: `${programName} Program Information - American Seekers Academy`,
+    htmlContent,
+    flow: "program",
+  });
 }
 
-async function sendWaitlistConfirmationEmail(entry: { name: string; email: string; programInterest?: string }): Promise<void> {
-  if (!process.env.SENDGRID_API_KEY) return;
-
+async function sendWaitlistConfirmationEmail(entry: { name: string; email: string; programInterest?: string }): Promise<EmailSendResult> {
   const programLabel = entry.programInterest
     ? entry.programInterest.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
     : null;
@@ -245,7 +313,13 @@ async function sendWaitlistConfirmationEmail(entry: { name: string; email: strin
     </html>
   `;
 
-  await sendTransactionalEmail(entry.email, entry.name, "You're on the Fall 2026 Waitlist — American Seekers Academy", htmlContent);
+  return sendEmailSafe({
+    to: entry.email,
+    toName: entry.name,
+    subject: "You're on the Fall 2026 Waitlist — American Seekers Academy",
+    htmlContent,
+    flow: "waitlist",
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -254,15 +328,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect(301, "https://accounts.americanseekersacademy.com/login");
   });
 
+  // Defense-in-depth: discourage search engine indexing of admin surfaces
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/admin") || req.path.startsWith("/blog/admin")) {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    }
+    next();
+  });
+
   // API routes for location suggestions
   app.post("/api/location-suggestions", async (req: Request, res: Response) => {
     try {
       const validatedData = insertLocationSuggestionSchema.parse(req.body);
       const suggestion = await storage.createLocationSuggestion(validatedData);
       
-      // Send email notification (don't block on this)
+      // Send email notification via SendGrid (don't block on this)
       sendLocationSuggestionNotification(validatedData).catch(err => {
-        console.error("Failed to send location suggestion notification:", err);
+        console.error("[email] location-suggestion email FAILED:", {
+          email: validatedData.email,
+          location: validatedData.location,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
       
       res.status(201).json({ success: true, suggestion });
@@ -319,22 +405,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertProgramInfoRequestSchema.parse(req.body);
       
-      // Save the request
+      // Save the request first (never block the user on email)
       const request = await storage.createProgramInfoRequest(validatedData);
       
       // Get PDF URL for this program
       const pdfUrl = programPdfUrls[validatedData.programSlug] || "/pdfs/general.pdf";
       
-      // Send email via HubSpot
-      await sendProgramInfoEmail(
+      // Send email via SendGrid (non-blocking — uses sendEmailSafe with retry)
+      sendProgramInfoEmail(
         validatedData.email,
         validatedData.name,
         validatedData.programName,
         validatedData.programSlug,
         pdfUrl
-      );
+      ).then(result => {
+        if (!result.success) {
+          console.error("[email] program-info email FAILED:", {
+            email: validatedData.email,
+            program: validatedData.programName,
+            error: result.error,
+          });
+        }
+      });
 
-      // Add the parent as a HubSpot contact (fire-and-forget)
+      // Add the parent as a HubSpot contact (fire-and-forget, optional)
       addHubSpotContact(validatedData.email, validatedData.name, {
         last_program_inquired: validatedData.programName,
       }).catch(err => {
@@ -347,15 +441,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
-      } else if (error instanceof Error && (error.message.includes("HubSpot") || error.message.includes("HUBSPOT_"))) {
-        res.status(500).json({ success: false, message: "Failed to send email. Please try again." });
       } else {
+        // Email failures are now handled non-blockingly above, so this is for
+        // unexpected errors (validation already passed and record was saved).
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
       }
     }
   });
 
-  // API route for contact inquiries with HubSpot contact and email notification
+  // API route for contact inquiries (SendGrid notification + optional HubSpot CRM upsert)
   app.post("/api/contact-inquiry", async (req: Request, res: Response) => {
     try {
       const validatedData = insertContactInquirySchema.parse(req.body);
@@ -368,9 +462,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Failed to add contact to HubSpot:", err);
       });
       
-      // Send email notification (don't block)
+      // Send email notification via SendGrid (don't block)
       sendContactInquiryNotification(validatedData).catch(err => {
-        console.error("Failed to send contact inquiry notification:", err);
+        console.error("[email] contact-inquiry email FAILED:", {
+          email: validatedData.email,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
       
       res.status(201).json({ success: true, inquiry });
@@ -398,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/blog/all", async (_req: Request, res: Response) => {
+  app.get("/api/blog/all", requireAdmin as any, async (_req: Request, res: Response) => {
     try {
       const posts = await storage.getAllBlogPosts();
       res.json({ success: true, posts });
@@ -422,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/blog", async (req: Request, res: Response) => {
+  app.post("/api/blog", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const validatedData = insertBlogPostSchema.parse(req.body);
       const post = await storage.createBlogPost(validatedData);
@@ -438,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/blog/:id", async (req: Request, res: Response) => {
+  app.put("/api/blog/:id", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = updateBlogPostSchema.parse(req.body);
@@ -459,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/blog/:id", async (req: Request, res: Response) => {
+  app.delete("/api/blog/:id", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteBlogPost(id);
@@ -474,8 +571,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =============================================================================
+  // Lightweight rate limiting for public analytics endpoint
+  // Protects against spam while remaining invisible to normal visitors.
+  // =============================================================================
+  const PAGEVIEW_LIMIT = parseInt(process.env.ANALYTICS_RATE_LIMIT || "40", 10);
+  const PAGEVIEW_WINDOW_MS = parseInt(process.env.ANALYTICS_RATE_WINDOW_MINUTES || "5", 10) * 60 * 1000;
+
+  const pageViewRateLimit = new Map<string, { count: number; resetTime: number }>();
+  let lastRateLimitLog = 0;
+
+  function isPageViewRateLimited(ip: string): boolean {
+    const now = Date.now();
+    let entry = pageViewRateLimit.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+      pageViewRateLimit.set(ip, { count: 1, resetTime: now + PAGEVIEW_WINDOW_MS });
+      return false;
+    }
+
+    if (entry.count >= PAGEVIEW_LIMIT) {
+      // Throttled logging so we don't spam logs during an attack
+      if (now - lastRateLimitLog > 30000) {
+        console.warn(`[analytics] Rate limit hit for IP ${ip} (${PAGEVIEW_LIMIT} views / ${PAGEVIEW_WINDOW_MS / 60000}min window)`);
+        lastRateLimitLog = now;
+      }
+      return true;
+    }
+
+    entry.count += 1;
+    return false;
+  }
+
+  // Periodic cleanup of stale rate limit entries (every 10 minutes)
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of pageViewRateLimit) {
+      if (now > entry.resetTime) {
+        pageViewRateLimit.delete(ip);
+      }
+    }
+  }, 10 * 60 * 1000);
+
+  // =============================================================================
+  // Rate limiting specifically for admin login (brute force protection)
+  // =============================================================================
+  const LOGIN_LIMIT = parseInt(process.env.ADMIN_LOGIN_RATE_LIMIT || "5", 10);
+  const LOGIN_WINDOW_MS = parseInt(process.env.ADMIN_LOGIN_RATE_WINDOW_MINUTES || "15", 10) * 60 * 1000;
+
+  const loginRateLimit = new Map<string, { count: number; resetTime: number }>();
+  let lastLoginRateLimitLog = 0;
+
+  function isLoginRateLimited(ip: string): boolean {
+    const now = Date.now();
+    let entry = loginRateLimit.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+      loginRateLimit.set(ip, { count: 1, resetTime: now + LOGIN_WINDOW_MS });
+      return false;
+    }
+
+    if (entry.count >= LOGIN_LIMIT) {
+      if (now - lastLoginRateLimitLog > 30000) {
+        console.warn(`[admin] Login rate limit hit for IP ${ip} (${LOGIN_LIMIT} attempts / ${LOGIN_WINDOW_MS / 60000}min)`);
+        lastLoginRateLimitLog = now;
+      }
+      return true;
+    }
+
+    entry.count += 1;
+    return false;
+  }
+
+  // Cleanup for login rate limits
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of loginRateLimit) {
+      if (now > entry.resetTime) {
+        loginRateLimit.delete(ip);
+      }
+    }
+  }, 10 * 60 * 1000);
+
   // Analytics - Track page view (public endpoint)
+  // Protected with light per-IP rate limiting to reduce spam/abuse.
   app.post("/api/analytics/pageview", async (req: Request, res: Response) => {
+    const ip = (req.ip || req.socket.remoteAddress || "unknown").toString();
+
+    // If rate limited, still return success so the client doesn't retry or surface errors.
+    // We simply drop the write to protect the database.
+    if (isPageViewRateLimited(ip)) {
+      return res.status(200).json({ success: true, rateLimited: true });
+    }
+
     try {
       const validatedData = insertPageViewSchema.parse(req.body);
       await storage.createPageView(validatedData);
@@ -504,31 +692,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
-  // Admin login
+  // Admin login (with rate limiting to protect against brute force)
   app.post("/api/admin/login", async (req: Request, res: Response) => {
+    const ip = (req.ip || req.socket.remoteAddress || "unknown").toString();
+
+    // Apply strict rate limiting on login attempts
+    if (isLoginRateLimited(ip)) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many login attempts. Please try again later.",
+      });
+    }
+
     try {
       const { password } = req.body;
       const adminPassword = process.env.ADMIN_PASSWORD;
-      
+
       if (!adminPassword) {
         res.status(500).json({ success: false, message: "Admin password not configured" });
         return;
       }
-      
+
       if (password !== adminPassword) {
         res.status(401).json({ success: false, message: "Invalid password" });
         return;
       }
-      
+
       // Create a session token
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
+
       await storage.createAdminSession(token, expiresAt);
-      
+
       // Clean up old expired sessions
       await storage.cleanExpiredSessions();
-      
+
       res.json({ success: true, token, expiresAt: expiresAt.toISOString() });
     } catch (error) {
       console.error("Admin login error:", error);
@@ -639,36 +837,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.createContactInquiry(testInquiry);
 
     const sentTo = "contact@americanseekersacademy.com";
-    const sentAt = new Date().toISOString();
-    let emailResult: EmailSendResult | null = null;
-    let errorMessage: string | null = null;
+    const sentAt = new Date();
 
-    try {
-      emailResult = await sendContactInquiryNotification(testInquiry);
-    } catch (err) {
-      errorMessage = err instanceof Error ? err.message : String(err);
-    }
+    // sendContactInquiryNotification now uses sendEmailSafe internally (never throws)
+    const emailResult = await sendContactInquiryNotification(testInquiry);
 
     const run = await storage.createEmailTestRun({
       flow: "contact",
       sentTo,
+      // Legacy fields (kept for backward compatibility with existing rows)
       hubspotStatusId: emailResult?.statusId ?? null,
       hubspotSendId: emailResult?.sendId ?? null,
-      apiAccepted: !!emailResult,
-      errorMessage,
+      // Current provider fields (preferred)
+      provider: "sendgrid",
+      providerMessageId: emailResult?.sendId ?? null,
+      apiAccepted: emailResult.success,
+      errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
       confirmedBy: null,
     });
 
     res.json({
-      success: !!emailResult,
+      success: emailResult.success,
       config,
       run,
       sentTo,
-      message: emailResult
+      message: emailResult.success
         ? `SendGrid accepted the contact notification email. Check contact@americanseekersacademy.com inbox to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        : `SendGrid API call failed: ${emailResult.error}`,
     });
   });
 
@@ -690,36 +887,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.createLocationSuggestion(testSuggestion);
 
     const sentTo = "contact@americanseekersacademy.com";
-    const sentAt = new Date().toISOString();
-    let emailResult: EmailSendResult | null = null;
-    let errorMessage: string | null = null;
+    const sentAt = new Date();
 
-    try {
-      emailResult = await sendLocationSuggestionNotification(testSuggestion);
-    } catch (err) {
-      errorMessage = err instanceof Error ? err.message : String(err);
-    }
+    const emailResult = await sendLocationSuggestionNotification(testSuggestion);
 
     const run = await storage.createEmailTestRun({
       flow: "location",
       sentTo,
+      // Legacy fields (kept for backward compatibility with existing rows)
       hubspotStatusId: emailResult?.statusId ?? null,
       hubspotSendId: emailResult?.sendId ?? null,
-      apiAccepted: !!emailResult,
-      errorMessage,
+      // Current provider fields (preferred)
+      provider: "sendgrid",
+      providerMessageId: emailResult?.sendId ?? null,
+      apiAccepted: emailResult.success,
+      errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
       confirmedBy: null,
     });
 
     res.json({
-      success: !!emailResult,
+      success: emailResult.success,
       config,
       run,
       sentTo,
-      message: emailResult
+      message: emailResult.success
         ? `SendGrid accepted the location suggestion email. Check contact@americanseekersacademy.com to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        : `SendGrid API call failed: ${emailResult.error}`,
     });
   });
 
@@ -749,42 +944,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.createProgramInfoRequest(testRequest);
 
-    const sentAt = new Date().toISOString();
-    let emailResult: EmailSendResult | null = null;
-    let errorMessage: string | null = null;
+    const sentAt = new Date();
 
-    try {
-      emailResult = await sendProgramInfoEmail(
-        recipientEmail,
-        testRequest.name,
-        testRequest.programName,
-        testRequest.programSlug,
-        programPdfUrls[testRequest.programSlug] ?? "/pdfs/general.pdf"
-      );
-    } catch (err) {
-      errorMessage = err instanceof Error ? err.message : String(err);
-    }
+    const emailResult = await sendProgramInfoEmail(
+      recipientEmail,
+      testRequest.name,
+      testRequest.programName,
+      testRequest.programSlug,
+      programPdfUrls[testRequest.programSlug] ?? "/pdfs/general.pdf"
+    );
 
     const run = await storage.createEmailTestRun({
       flow: "program",
       sentTo: recipientEmail,
+      // Legacy fields (kept for backward compatibility with existing rows)
       hubspotStatusId: emailResult?.statusId ?? null,
       hubspotSendId: emailResult?.sendId ?? null,
-      apiAccepted: !!emailResult,
-      errorMessage,
+      // Current provider fields (preferred)
+      provider: "sendgrid",
+      providerMessageId: emailResult?.sendId ?? null,
+      apiAccepted: emailResult.success,
+      errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
       confirmedBy: null,
     });
 
     res.json({
-      success: !!emailResult,
+      success: emailResult.success,
       config,
       run,
       sentTo: recipientEmail,
-      message: emailResult
+      message: emailResult.success
         ? `SendGrid accepted the program welcome email. Check ${recipientEmail} inbox to confirm delivery, then mark it confirmed below.`
-        : `SendGrid API call failed: ${errorMessage}`,
+        : `SendGrid API call failed: ${emailResult.error}`,
     });
   });
 
@@ -927,12 +1120,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertRegistrationWaitlistSchema.parse(req.body);
       const entry = await storage.createRegistrationWaitlistEntry(validatedData);
 
-      // Send confirmation email to the sign-up (don't block on this)
-      sendWaitlistConfirmationEmail(validatedData)
-        .then(() => console.log(`[waitlist] confirmation email sent to ${validatedData.email}`))
-        .catch(err => {
-          console.error(`[waitlist] email FAILED to ${validatedData.email} — code: ${err?.code} body: ${JSON.stringify(err?.response?.body)}`);
-        });
+      // Send confirmation email (non-blocking, now uses safe helper with retry)
+      sendWaitlistConfirmationEmail(validatedData).then((result) => {
+        if (result.success) {
+          console.log(`[email] waitlist confirmation sent to ${validatedData.email}`);
+        } else {
+          console.error(`[email] waitlist email FAILED to ${validatedData.email}: ${result.error}`);
+        }
+      });
 
       res.status(201).json({ success: true, entry });
     } catch (error) {
@@ -965,7 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `"${(e.phone || "").replace(/"/g, '""')}"`,
         e.phoneOptOut ? "Yes" : "No",
         `"${(e.message || "").replace(/"/g, '""')}"`,
-        `"${new Date(e.createdAt).toLocaleString()}"`,
+        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"contacts.csv\"");
@@ -983,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `"${(e.email || "").replace(/"/g, '""')}"`,
         `"${(e.location || "").replace(/"/g, '""')}"`,
         `"${(e.comments || "").replace(/"/g, '""')}"`,
-        `"${new Date(e.createdAt).toLocaleString()}"`,
+        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"location-suggestions.csv\"");
@@ -1001,7 +1196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `"${(e.email || "").replace(/"/g, '""')}"`,
         `"${(e.phone || "").replace(/"/g, '""')}"`,
         `"${(e.programName || "").replace(/"/g, '""')}"`,
-        `"${new Date(e.createdAt).toLocaleString()}"`,
+        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"program-requests.csv\"");
@@ -1016,7 +1211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rows = items.map(e => [
         e.id,
         `"${(e.email || "").replace(/"/g, '""')}"`,
-        `"${new Date(e.createdAt).toLocaleString()}"`,
+        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"newsletters.csv\"");
@@ -1035,7 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `"${(e.email || "").replace(/"/g, '""')}"`,
           `"${(e.phone || "").replace(/"/g, '""')}"`,
           `"${(e.programInterest || "").replace(/"/g, '""')}"`,
-          `"${new Date(e.createdAt).toLocaleString()}"`,
+          `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
         ].join(",")
       ).join("\n");
       res.setHeader("Content-Type", "text/csv");

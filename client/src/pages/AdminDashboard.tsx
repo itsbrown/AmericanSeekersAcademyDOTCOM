@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
@@ -15,34 +15,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { insertAnnouncementSchema, type InsertAnnouncement, type Announcement } from "@shared/schema";
 import type { ContactInquiry, LocationSuggestion, ProgramInfoRequest, Newsletter, PageView, RegistrationWaitlistEntry } from "@shared/schema";
-
-const AUTH_TOKEN_KEY = "admin_token";
-
-function getStoredToken(): string | null {
-  return localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
-function setStoredToken(token: string): void {
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
-}
-
-function clearStoredToken(): void {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-}
-
-function getAuthHeaders(): HeadersInit {
-  const token = getStoredToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+import { useAdminAuth, getAuthHeaders, clearStoredToken } from "@/hooks/use-admin-auth";
 
 export default function AdminDashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  const {
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    loginPending,
+  } = useAdminAuth();
 
   useEffect(() => {
     document.title = "Admin Dashboard | American Seekers Academy";
@@ -57,67 +45,13 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  useEffect(() => {
-    const verifySession = async () => {
-      const token = getStoredToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const res = await fetch("/api/admin/verify", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-        } else {
-          clearStoredToken();
-        }
-      } catch {
-        clearStoredToken();
-      }
-      setIsLoading(false);
-    };
-
-    verifySession();
-  }, []);
-
-  const loginMutation = useMutation({
-    mutationFn: async (pwd: string) => {
-      const res = await apiRequest("POST", "/api/admin/login", { password: pwd });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.success && data.token) {
-        setStoredToken(data.token);
-        setIsAuthenticated(true);
-        toast({ title: "Logged in successfully" });
-      }
-    },
-    onError: () => {
-      toast({ title: "Invalid password", variant: "destructive" });
-    },
-  });
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate(password);
+    login(password);
   };
 
   const handleLogout = async () => {
-    const token = getStoredToken();
-    if (token) {
-      try {
-        await fetch("/api/admin/logout", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch {}
-    }
-    clearStoredToken();
-    setIsAuthenticated(false);
+    await logout();
     setPassword("");
   };
 
@@ -151,10 +85,10 @@ export default function AdminDashboard() {
               <Button
                 type="submit"
                 className="w-full btn-primary"
-                disabled={loginMutation.isPending}
+                disabled={loginPending}
                 data-testid="button-admin-login"
               >
-                {loginMutation.isPending ? "Logging in..." : "Login"}
+                {loginPending ? "Logging in..." : "Login"}
               </Button>
             </form>
           </CardContent>
@@ -704,8 +638,12 @@ type EmailTestRun = {
   id: number;
   flow: string;
   sentTo: string;
+  // Legacy fields (may exist on old records)
   hubspotStatusId: string | null;
   hubspotSendId: string | null;
+  // Current fields (preferred)
+  provider?: string | null;
+  providerMessageId?: string | null;
   apiAccepted: boolean;
   errorMessage: string | null;
   sentAt: string;
@@ -718,6 +656,7 @@ type FlowTestResult = {
   message: string;
   sentTo?: string;
   run?: EmailTestRun;
+  // Legacy name kept for compatibility; currently unused in rendering
   hubspotResponse?: Record<string, unknown>;
 };
 
@@ -1067,8 +1006,19 @@ function ServerVerificationLog({
                 </span>
               </div>
               <p className="text-xs text-gray-500">Sent to: {run.sentTo}</p>
-              {run.hubspotStatusId && <p className="text-xs text-gray-400 font-mono">statusId: {run.hubspotStatusId}</p>}
-              {run.hubspotSendId && <p className="text-xs text-gray-400 font-mono">sendId: {run.hubspotSendId}</p>}
+              {/* Prefer new provider fields, fall back to legacy hubspot* columns for old records */}
+              {run.provider && (
+                <p className="text-xs text-gray-400 font-mono">
+                  provider: {run.provider}
+                  {run.providerMessageId && ` • ${run.providerMessageId}`}
+                </p>
+              )}
+              {!run.provider && run.hubspotSendId && (
+                <p className="text-xs text-gray-400 font-mono">sendId: {run.hubspotSendId}</p>
+              )}
+              {!run.provider && run.hubspotStatusId && (
+                <p className="text-xs text-gray-400 font-mono">statusId: {run.hubspotStatusId}</p>
+              )}
               {run.errorMessage && <p className="text-xs text-red-600">Error: {run.errorMessage}</p>}
               <p className="text-xs text-gray-400">Sent: {new Date(run.sentAt).toLocaleString()}</p>
               {run.inboxConfirmedAt && (
