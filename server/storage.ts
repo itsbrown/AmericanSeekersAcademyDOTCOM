@@ -1,7 +1,6 @@
 import { db } from "./db";
 import { eq, desc, sql, gte } from "drizzle-orm";
 import { 
-  users, type User, type InsertUser,
   locationSuggestions, type LocationSuggestion, type InsertLocationSuggestion,
   newsletters, type Newsletter, type InsertNewsletter,
   programInfoRequests, type ProgramInfoRequest, type InsertProgramInfoRequest,
@@ -15,11 +14,6 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  // User methods
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
   // Location suggestion methods
   createLocationSuggestion(suggestion: InsertLocationSuggestion): Promise<LocationSuggestion>;
   getLocationSuggestions(): Promise<LocationSuggestion[]>;
@@ -79,28 +73,11 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
-  }
-  
   // Location suggestion methods
   async createLocationSuggestion(suggestion: InsertLocationSuggestion): Promise<LocationSuggestion> {
-    const nowISOString = new Date().toISOString();
     const [locationSuggestion] = await db.insert(locationSuggestions).values({
       ...suggestion,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return locationSuggestion;
   }
@@ -117,10 +94,9 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Email already subscribed");
     }
     
-    const nowISOString = new Date().toISOString();
     const [newNewsletter] = await db.insert(newsletters).values({
       ...newsletter,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return newNewsletter;
   }
@@ -132,30 +108,27 @@ export class DatabaseStorage implements IStorage {
   
   // Program info request methods
   async createProgramInfoRequest(request: InsertProgramInfoRequest): Promise<ProgramInfoRequest> {
-    const nowISOString = new Date().toISOString();
     const [programInfoRequest] = await db.insert(programInfoRequests).values({
       ...request,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return programInfoRequest;
   }
   
   // Contact inquiry methods
   async createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry> {
-    const nowISOString = new Date().toISOString();
     const [contactInquiry] = await db.insert(contactInquiries).values({
       ...inquiry,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return contactInquiry;
   }
   
   // Blog post methods
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    const nowISOString = new Date().toISOString();
     const [blogPost] = await db.insert(blogPosts).values({
       ...post,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return blogPost;
   }
@@ -200,12 +173,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPageView(view: InsertPageView): Promise<PageView> {
-    const nowISOString = new Date().toISOString();
     const [pageView] = await db.insert(pageViews).values({
       path: view.path,
       referrer: this.sanitizeReferrer(view.referrer),
       userAgent: null,
-      createdAt: nowISOString
+      createdAt: new Date()
     }).returning();
     return pageView;
   }
@@ -244,18 +216,17 @@ export class DatabaseStorage implements IStorage {
   
   // Admin session methods
   async createAdminSession(token: string, expiresAt: Date): Promise<AdminSession> {
-    const nowISOString = new Date().toISOString();
     const [session] = await db.insert(adminSessions).values({
       sessionToken: token,
-      createdAt: nowISOString,
-      expiresAt: expiresAt.toISOString()
+      createdAt: new Date(),
+      expiresAt: expiresAt
     }).returning();
     return session;
   }
   
   async getAdminSession(token: string): Promise<AdminSession | undefined> {
     const [session] = await db.select().from(adminSessions).where(eq(adminSessions.sessionToken, token));
-    if (session && new Date(session.expiresAt) > new Date()) {
+    if (session && session.expiresAt > new Date()) {
       return session;
     }
     return undefined;
@@ -267,8 +238,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async cleanExpiredSessions(): Promise<void> {
-    const now = new Date().toISOString();
-    await db.delete(adminSessions).where(sql`${adminSessions.expiresAt} < ${now}`);
+    await db.delete(adminSessions).where(sql`${adminSessions.expiresAt} < ${new Date()}`);
   }
   
   // Additional data retrieval for admin
@@ -301,10 +271,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
-    const nowISOString = new Date().toISOString();
     const [created] = await db.insert(announcements).values({
       ...announcement,
-      createdAt: nowISOString,
+      createdAt: new Date(),
     }).returning();
     return created;
   }
@@ -325,7 +294,10 @@ export class DatabaseStorage implements IStorage {
 
   // Email test run methods
   async createEmailTestRun(run: Omit<EmailTestRun, "id">): Promise<EmailTestRun> {
-    const [created] = await db.insert(emailTestRuns).values(run).returning();
+    const [created] = await db.insert(emailTestRuns).values({
+      ...run,
+      sentAt: run.sentAt ?? new Date(),
+    }).returning();
     return created;
   }
 
@@ -336,7 +308,7 @@ export class DatabaseStorage implements IStorage {
   async confirmEmailTestRun(id: number, confirmedBy: string): Promise<EmailTestRun | undefined> {
     const [updated] = await db
       .update(emailTestRuns)
-      .set({ inboxConfirmedAt: new Date().toISOString(), confirmedBy })
+      .set({ inboxConfirmedAt: new Date(), confirmedBy })
       .where(eq(emailTestRuns.id, id))
       .returning();
     return updated;
@@ -346,7 +318,7 @@ export class DatabaseStorage implements IStorage {
   async createRegistrationWaitlistEntry(entry: InsertRegistrationWaitlist): Promise<RegistrationWaitlistEntry> {
     const [created] = await db.insert(registrationWaitlist).values({
       ...entry,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     }).returning();
     return created;
   }

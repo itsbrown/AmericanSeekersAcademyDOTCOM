@@ -150,67 +150,100 @@ The blog system includes:
 - **Google Fonts**: Playfair Display and Inter fonts
 - **Lucide React**: Icon library for UI icons
 
-### HubSpot Integration (Email & CRM)
-Transactional emails and contact management use HubSpot. Two secrets must be set in Replit Secrets:
+### Email & CRM Integration (Actual Implementation)
 
-| Secret | Description |
-|--------|-------------|
-| `HUBSPOT_API` | HubSpot Private App access token (starts with `pat-`) — used for all HubSpot API calls |
-| `HUBSPOT_TRANSACTIONAL_EMAIL_ID` | Numeric or UUID ID of a HubSpot Transactional Email template — found in HubSpot → Marketing → Email → Transactional |
+**Important:** This site uses **SendGrid** for all transactional emails. HubSpot is used **only** for optional CRM contact upsert. The previous documentation describing a HubSpot transactional email system is obsolete and should be ignored.
 
-The HubSpot transactional email template must include these tokens:
-- Subject line: `{{ custom.subject }}`
-- Body: `{{{ custom.html_content }}}` (triple braces to render raw HTML)
+#### Required Environment Variables
 
-Three email flows use HubSpot:
-1. Contact form submissions → notification email to `contact@americanseekersacademy.com`
-2. Location suggestion submissions → notification email to `contact@americanseekersacademy.com`
-3. Program info requests → welcome/PDF email sent to the parent
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `DATABASE_URL` | Neon Postgres connection string | Yes |
+| `ADMIN_PASSWORD` | Shared password for the `/admin` dashboard | Yes (for admin features) |
+| `SENDGRID_API_KEY` | SendGrid API key (must have verified sender for `contact@americanseekersacademy.com`) | Yes (for any emails to be sent) |
+| `HUBSPOT_API` | HubSpot Private App token (starts with `pat-`) — used only for CRM contact upsert | Optional |
 
-Contact form submitters are also upserted as contacts in HubSpot CRM automatically.
+#### Email Flows (All via SendGrid)
 
-### HubSpot Portal Setup Requirements
+All transactional emails are sent using raw HTML through SendGrid's API:
 
-To have all three email flows deliver successfully, the following must be completed inside the HubSpot portal:
+1. **Contact form** (`/api/contact-inquiry`) → notification to `contact@americanseekersacademy.com`
+2. **Location suggestion** (`/api/location-suggestions`) → notification to `contact@americanseekersacademy.com`
+3. **Program info request** (`/api/program-info-request`) → welcome email + PDF link sent to the parent
+4. **Registration waitlist** (`/api/registration-waitlist`) → confirmation email to parent (Fall 2026 launch)
 
-**Private App Setup**
-1. Go to HubSpot → Settings → Integrations → Private Apps
-2. Create a private app (or confirm one exists) with these scopes:
-   - `transactional-email` (send transactional emails)
-   - `crm.objects.contacts.write` (upsert contacts from the contact form)
-3. Copy the access token (starts with `pat-`) and save it as `HUBSPOT_API` in Replit Secrets
+From address used: `"American Seekers Academy" <contact@americanseekersacademy.com>`
 
-**Transactional Email Template**
-1. Go to HubSpot → Marketing → Email → Transactional
-2. Create (or confirm) a transactional email template
-3. The template subject line must contain: `{{ custom.subject }}`
-4. The template body must contain: `{{{ custom.html_content }}}` (triple braces for raw HTML)
-5. Copy the numeric template ID from the URL or template list and save as `HUBSPOT_TRANSACTIONAL_EMAIL_ID` in Replit Secrets
-6. Ensure transactional email is enabled for your HubSpot subscription (requires Marketing Hub or add-on)
+**SendGrid Requirements**
+- The sending address must be a verified Single Sender or authenticated domain in your SendGrid account.
+- No special template IDs are used — emails are constructed as raw HTML in `server/routes.ts`.
 
-**Sending Domain**
-1. Go to HubSpot → Settings → Marketing → Email → Sending Domains
-2. Verify/authenticate a sending domain (the "from" domain used in `sendTransactionalEmail()`)
-3. Emails are sent as `"American Seekers Academy" <noreply@americanseekersacademy.com>`
+#### HubSpot CRM (Optional)
 
-**Admin Email Delivery Verification (Email Health tab)**
-The admin dashboard at `/admin` → Email Health tab provides:
-- Live configuration status showing whether both secrets are set
-- Per-flow test buttons (Contact, Location, Program) that mirror the real public form submission flow exactly — saving a DB record and calling HubSpot
-- A server-persisted audit log (`email_test_runs` table) showing HubSpot `statusId`/`sendId` for each test
-- "Confirm Delivery" buttons to record human inbox verification with a timestamp, stored permanently in the database
+When `HUBSPOT_API` is set, the following actions also create/update contacts in HubSpot CRM (best-effort, non-blocking):
 
-**API Endpoints for Email Audit**
-- `GET /api/admin/email-test-runs` — retrieve all email test run records
-- `POST /api/admin/email-test-runs/:id/confirm` — mark a specific run as inbox-confirmed
+- Contact form submissions
+- Program info requests
+
+Only the `crm.objects.contacts.write` scope is needed on the Private App.
+
+#### Admin Email Testing & Delivery Verification
+
+The admin dashboard (`/admin` → Email Health tab) provides end-to-end testing of the real email flows:
+
+- Configuration status for SendGrid and HubSpot
+- Test buttons that execute the **exact same code paths** as the public forms
+- Results (including SendGrid `sendId`) are recorded in the `email_test_runs` table
+- "Confirm Delivery" buttons let an admin manually record that they saw the email in the inbox
+
+This is the recommended way to verify deliverability after changing SendGrid settings.
+
+**Related API endpoints**
+- `GET /api/admin/email-status`
+- `POST /api/admin/test-email/contact`
+- `POST /api/admin/test-email/location`
+- `POST /api/admin/test-email/program`
+- `GET /api/admin/email-test-runs`
+- `POST /api/admin/email-test-runs/:id/confirm`
 
 ### Key NPM Packages
 - `drizzle-kit`: Database migrations and schema management
-- `express-session` with `connect-pg-simple`: Session management
 - `embla-carousel-react`: Carousel component
 - `react-day-picker`: Date picker component
 - `vaul`: Drawer component
 - `recharts`: Charting library
+- `@sendgrid/mail`: Transactional email delivery (primary)
+- `@neondatabase/serverless` + `drizzle-orm`: Database
+
+**Note:** `express-session`, `connect-pg-simple`, `passport`, and `passport-local` are declared in package.json but are **not used** by the current codebase (custom bearer-token admin sessions are used instead). They can be safely removed.
+
+### Analytics Protection
+
+The public `POST /api/analytics/pageview` endpoint (used by `AnalyticsTracker.tsx`) is protected by lightweight per-IP rate limiting.
+
+- Default: 40 pageviews per 5-minute window per IP address.
+- When rate limited, the server returns success (to avoid breaking the frontend) but does **not** write the record to the database.
+- Limits are configurable via environment variables:
+  - `ANALYTICS_RATE_LIMIT`
+  - `ANALYTICS_RATE_WINDOW_MINUTES`
+
+This provides basic protection against bots and abuse without affecting normal visitors.
+
+### Admin Security
+
+The admin area (`/admin`) uses a simple shared-password + bearer token model (tokens stored in the `admin_sessions` table, 24-hour expiry).
+
+**Brute force protection** has been added to the login endpoint (`POST /api/admin/login`):
+
+- Default: 5 failed attempts per 15-minute window per IP.
+- Exceeding the limit returns HTTP 429.
+- Configurable via:
+  - `ADMIN_LOGIN_RATE_LIMIT`
+  - `ADMIN_LOGIN_RATE_WINDOW_MINUTES`
+
+All sensitive admin data endpoints are protected by the `requireAdmin` middleware (valid bearer token required).
+
+Note: The admin SPA pages themselves are publicly routable (common pattern for simple tools). Only the data APIs are gated.
 
 ## Redirects
 

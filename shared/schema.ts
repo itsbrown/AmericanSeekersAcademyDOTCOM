@@ -1,20 +1,28 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
+// =============================================================================
+// SCHEMA NOTES
+// =============================================================================
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+// DATE HANDLING NOTE (Migration Largely Complete):
+// All timestamp columns have been migrated to proper `timestamp(..., { withTimezone: true })`.
+// This gives us real Date objects from the database, proper timezone handling, and better
+// query capabilities.
+//
+// - When inserting: Pass `new Date()` (or let `.defaultNow()` handle it).
+// - When reading: You will receive `Date` objects (Drizzle + pg driver handle conversion).
+// - JSON responses will serialize these Dates as ISO strings (standard behavior).
+//
+// The old `text` columns have been replaced. Run `npm run db:push` (or generate a migration)
+// after pulling these changes. Existing data in production will need a one-time backfill
+// if you want to preserve historical timestamps (or you can treat old rows as having
+// approximate dates based on other fields).
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// AUTH NOTE:
+// The original `users` table (below, now removed) + passport dependencies were
+// vestigial. Only the custom `admin_sessions` bearer token system is used for admin access.
 
 export const locationSuggestions = pgTable("location_suggestions", {
   id: serial("id").primaryKey(),
@@ -22,7 +30,8 @@ export const locationSuggestions = pgTable("location_suggestions", {
   email: text("email").notNull(),
   location: text("location").notNull(),
   comments: text("comments"),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertLocationSuggestionSchema = createInsertSchema(locationSuggestions).pick({
@@ -38,7 +47,8 @@ export type LocationSuggestion = typeof locationSuggestions.$inferSelect;
 export const newsletters = pgTable("newsletters", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertNewsletterSchema = createInsertSchema(newsletters).pick({
@@ -55,7 +65,8 @@ export const programInfoRequests = pgTable("program_info_requests", {
   phone: text("phone").notNull(),
   programSlug: text("program_slug").notNull(),
   programName: text("program_name").notNull(),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertProgramInfoRequestSchema = createInsertSchema(programInfoRequests).pick({
@@ -76,7 +87,8 @@ export const contactInquiries = pgTable("contact_inquiries", {
   phone: text("phone").notNull(),
   message: text("message").notNull(),
   phoneOptOut: boolean("phone_opt_out").notNull().default(false),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertContactInquirySchema = createInsertSchema(contactInquiries).pick({
@@ -100,8 +112,9 @@ export const blogPosts = pgTable("blog_posts", {
   content: text("content").notNull(),
   featuredImage: text("featured_image"),
   published: boolean("published").notNull().default(false),
-  publishedAt: text("published_at"),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
@@ -122,7 +135,8 @@ export const pageViews = pgTable("page_views", {
   path: text("path").notNull(),
   referrer: text("referrer"),
   userAgent: text("user_agent"),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertPageViewSchema = createInsertSchema(pageViews).pick({
@@ -140,8 +154,9 @@ export type PageView = typeof pageViews.$inferSelect;
 export const adminSessions = pgTable("admin_sessions", {
   id: serial("id").primaryKey(),
   sessionToken: text("session_token").notNull().unique(),
-  createdAt: text("created_at").notNull(),
-  expiresAt: text("expires_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
 export type AdminSession = typeof adminSessions.$inferSelect;
@@ -150,12 +165,21 @@ export const emailTestRuns = pgTable("email_test_runs", {
   id: serial("id").primaryKey(),
   flow: text("flow").notNull(),
   sentTo: text("sent_to").notNull(),
+  // Legacy columns from when HubSpot was used for transactional emails.
+  // They may still contain data from old test runs. New records should use
+  // the provider + providerMessageId columns below.
   hubspotStatusId: text("hubspot_status_id"),
   hubspotSendId: text("hubspot_send_id"),
+
+  // Current provider information (preferred for new records)
+  provider: text("provider"),                    // e.g. "sendgrid"
+  providerMessageId: text("provider_message_id"), // SendGrid sendId or equivalent
+
   apiAccepted: boolean("api_accepted").notNull().default(false),
   errorMessage: text("error_message"),
-  sentAt: text("sent_at").notNull(),
-  inboxConfirmedAt: text("inbox_confirmed_at"),
+  // Migrated to proper timestamp
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  inboxConfirmedAt: timestamp("inbox_confirmed_at", { withTimezone: true }),
   confirmedBy: text("confirmed_by"),
 });
 
@@ -169,7 +193,8 @@ export const announcements = pgTable("announcements", {
   published: boolean("published").notNull().default(false),
   pinned: boolean("pinned").notNull().default(false),
   url: text("url"),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const registrationWaitlist = pgTable("registration_waitlist", {
@@ -178,7 +203,8 @@ export const registrationWaitlist = pgTable("registration_waitlist", {
   email: text("email").notNull(),
   phone: text("phone"),
   programInterest: text("program_interest"),
-  createdAt: text("created_at").notNull(),
+  // Migrated to proper timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertRegistrationWaitlistSchema = createInsertSchema(registrationWaitlist).omit({
