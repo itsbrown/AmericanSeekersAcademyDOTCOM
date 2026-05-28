@@ -322,6 +322,122 @@ async function sendWaitlistConfirmationEmail(entry: { name: string; email: strin
   });
 }
 
+function buildAnnouncementEmailHtml(announcement: Announcement, typeLabel: string): string {
+  return `
+    <html>
+      <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f; margin: 0; padding: 0;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 0;">
+          <div style="background-color: #1e3a5f; padding: 28px 40px; text-align: center;">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0;">American Seekers Academy</h1>
+            <p style="color: #c4a052; margin: 8px 0 0 0; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">New ${typeLabel}</p>
+          </div>
+          <div style="padding: 40px; background-color: #ffffff;">
+            <div style="font-size: 12px; color: #888; margin-bottom: 8px;">
+              ${new Date(announcement.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            </div>
+            <h2 style="color: #1e3a5f; margin-top: 0; font-size: 22px;">${announcement.title}</h2>
+            <p style="white-space: pre-line; color: #333;">${announcement.content}</p>
+            ${announcement.url ? `
+              <div style="margin: 28px 0 8px 0;">
+                <a href="${announcement.url}" style="background-color: #c4a052; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">
+                  Learn More →
+                </a>
+              </div>
+            ` : `
+              <p style="margin-top: 24px;">
+                <a href="https://americanseekersacademy.com" style="color: #c4a052; font-weight: 600;">View on our website →</a>
+              </p>
+            `}
+          </div>
+          <div style="background-color: #f5f0e8; padding: 20px 40px; text-align: center; font-size: 13px; color: #666;">
+            You're receiving this because you signed up for updates or previously contacted American Seekers Academy.<br>
+            <a href="https://americanseekersacademy.com" style="color: #c4a052;">americanseekersacademy.com</a>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Sends a single test announcement email (used by admins to preview).
+ */
+async function sendTestAnnouncementEmail(announcement: Announcement, to: string, toName = "Test Recipient"): Promise<EmailSendResult> {
+  const typeLabel = announcement.type === "new-class" ? "New Class" 
+                  : announcement.type === "update" ? "Update" 
+                  : "Announcement";
+
+  const htmlContent = buildAnnouncementEmailHtml(announcement, typeLabel);
+  const subject = `[TEST] New ${typeLabel}: ${announcement.title}`;
+
+  return sendEmailSafe({
+    to,
+    toName,
+    subject,
+    htmlContent,
+    flow: "announcement-test",
+  });
+}
+
+/**
+ * Sends a notification email about a newly published announcement
+ * to all previous contact inquirers + newsletter subscribers (deduplicated by email).
+ * This is fire-and-forget safe and should be called without awaiting.
+ */
+async function sendAnnouncementLiveNotification(announcement: Announcement): Promise<void> {
+  try {
+    const [contacts, newsletters] = await Promise.all([
+      storage.getContactInquiries(),
+      storage.getNewsletterSubscriptions(),
+    ]);
+
+    // Merge contacts + newsletter subscribers, deduplicated by email.
+    // Prefer name from contact inquiry if available.
+    const recipients = new Map<string, string>();
+
+    for (const contact of contacts) {
+      if (!recipients.has(contact.email)) {
+        recipients.set(contact.email, contact.name);
+      }
+    }
+
+    for (const sub of newsletters) {
+      if (!recipients.has(sub.email)) {
+        recipients.set(sub.email, ""); // No name available for pure newsletter subs
+      }
+    }
+
+    if (recipients.size === 0) {
+      console.log(`[email] announcement flow skipped — no recipients (contacts + newsletter) to notify (id=${announcement.id})`);
+      return;
+    }
+
+    const typeLabel = announcement.type === "new-class" ? "New Class" 
+                    : announcement.type === "update" ? "Update" 
+                    : "Announcement";
+
+    const htmlContent = buildAnnouncementEmailHtml(announcement, typeLabel);
+    const subject = `New ${typeLabel}: ${announcement.title}`;
+
+    // Fire off individual emails (non-blocking, each has its own retry via sendEmailSafe)
+    for (const [email, name] of recipients.entries()) {
+      sendEmailSafe({
+        to: email,
+        toName: name,
+        subject,
+        htmlContent,
+        flow: "announcement",
+      }).catch(err => {
+        console.error(`[email] announcement individual send failed for ${email}:`, err);
+      });
+    }
+
+    console.log(`[email] announcement notifications queued — id=${announcement.id}, recipients=${recipients.size} (contacts + newsletter subscribers)`);
+  } catch (err) {
+    console.error(`[email] announcement notification flow failed (id=${announcement.id}):`, err);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // External redirects
   app.get("/login", (_req: Request, res: Response) => {
@@ -1069,6 +1185,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertAnnouncementSchema.parse(req.body);
       const announcement = await storage.createAnnouncement(validatedData);
+
+      // If created already published, send notifications (if not already sent)
+      if (announcement.published && !announcement.notificationSentAt) {
+        sendAnnouncementLiveNotification(announcement).then(async () => {
+          try {
+            await storage.updateAnnouncement(announcement.id, { notificationSentAt: new Date() } as any);
+          } catch (e) {
+            console.error("[announcement] Failed to mark notificationSentAt after create", e);
+          }
+        }).catch(err => {
+          console.error(`[email] announcement notification failed after create (id=${announcement.id}):`, err);
+        });
+      }
+
       res.status(201).json({ success: true, announcement });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1083,12 +1213,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/announcements/:id", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Fetch previous state so we can detect publish transitions
+      const previous = await storage.getAnnouncement(id);
+
       const validatedData = insertAnnouncementSchema.partial().parse(req.body);
       const announcement = await storage.updateAnnouncement(id, validatedData);
+
       if (!announcement) {
         res.status(404).json({ success: false, message: "Announcement not found" });
         return;
       }
+
+      // Trigger email notifications when an announcement goes live (published: false → true)
+      // and we haven't already sent notifications for it.
+      const justPublished = announcement.published && (!previous || !previous.published);
+      const notYetNotified = !announcement.notificationSentAt;
+
+      if (justPublished && notYetNotified) {
+        // Fire-and-forget — do not block the admin response
+        sendAnnouncementLiveNotification(announcement).then(async () => {
+          // Best-effort: mark that we have sent the notification
+          try {
+            await storage.updateAnnouncement(id, { notificationSentAt: new Date() } as any);
+          } catch (e) {
+            console.error("[announcement] Failed to mark notificationSentAt", e);
+          }
+        }).catch(err => {
+          console.error(`[email] announcement notification failed (id=${id}):`, err);
+        });
+      }
+
       res.json({ success: true, announcement });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1111,6 +1266,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to delete announcement" });
+    }
+  });
+
+  // Send a test email of an announcement (useful for admins to preview before publishing)
+  app.post("/api/admin/announcements/:id/test-email", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { testEmail } = req.body as { testEmail?: string };
+
+      const announcement = await storage.getAnnouncement(id);
+      if (!announcement) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+
+      const recipient = testEmail || "contact@americanseekersacademy.com";
+
+      const result = await sendTestAnnouncementEmail(announcement, recipient);
+
+      if (result.success) {
+        res.json({ success: true, message: `Test email sent to ${recipient}` });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send test email", error: result.error });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to send test email" });
     }
   });
 

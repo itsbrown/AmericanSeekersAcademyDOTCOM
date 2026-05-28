@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
@@ -1545,6 +1545,11 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                               ? <span className="text-xs text-green-600 flex items-center gap-1"><Globe className="w-3 h-3" />Published</span>
                               : <span className="text-xs text-gray-400 flex items-center gap-1"><EyeOff className="w-3 h-3" />Draft</span>
                             }
+                            {a.published && a.notificationSentAt && (
+                              <span className="text-xs text-blue-600 flex items-center gap-1" title="Email notification sent to contacts">
+                                ✉️ Notified
+                              </span>
+                            )}
                           </div>
                           <div className="font-semibold text-[#1e3a5f]">{a.title}</div>
                           <div className="text-sm text-gray-500 mt-1">{a.content}</div>
@@ -1570,6 +1575,29 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             title={a.pinned ? "Unpin" : "Pin"}
                           >
                             <Pin className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/admin/announcements/${a.id}/test-email`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast({ title: "Test email sent", description: data.message });
+                                } else {
+                                  toast({ title: "Failed to send test email", variant: "destructive" });
+                                }
+                              } catch {
+                                toast({ title: "Failed to send test email", variant: "destructive" });
+                              }
+                            }}
+                            title="Send test email to contact@americanseekersacademy.com"
+                          >
+                            <Send className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"

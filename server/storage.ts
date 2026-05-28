@@ -58,6 +58,7 @@ export interface IStorage {
   // Announcement methods
   getPublishedAnnouncements(): Promise<Announcement[]>;
   getAllAnnouncements(): Promise<Announcement[]>;
+  getAnnouncement(id: number): Promise<Announcement | undefined>;
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
   updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
   deleteAnnouncement(id: number): Promise<boolean>;
@@ -268,6 +269,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(announcements)
       .orderBy(desc(announcements.pinned), desc(announcements.createdAt));
+  }
+
+  async getAnnouncement(id: number): Promise<Announcement | undefined> {
+    const [announcement] = await db
+      .select()
+      .from(announcements)
+      .where(eq(announcements.id, id));
+    return announcement;
   }
 
   async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {

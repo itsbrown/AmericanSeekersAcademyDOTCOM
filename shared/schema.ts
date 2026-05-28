@@ -195,6 +195,9 @@ export const announcements = pgTable("announcements", {
   url: text("url"),
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Set when we have sent email notifications to contacts about this announcement going live.
+  // Used to prevent duplicate notifications if an announcement is toggled published multiple times.
+  notificationSentAt: timestamp("notification_sent_at", { withTimezone: true }),
 });
 
 export const registrationWaitlist = pgTable("registration_waitlist", {

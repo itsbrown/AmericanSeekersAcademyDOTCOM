@@ -171,6 +171,7 @@ All transactional emails are sent using raw HTML through SendGrid's API:
 2. **Location suggestion** (`/api/location-suggestions`) → notification to `contact@americanseekersacademy.com`
 3. **Program info request** (`/api/program-info-request`) → welcome email + PDF link sent to the parent
 4. **Registration waitlist** (`/api/registration-waitlist`) → confirmation email to parent (Fall 2026 launch)
+5. **Published announcements** — when an admin publishes a new announcement, notification emails are sent to previous contact inquirers **and** newsletter subscribers (best-effort, non-blocking, deduplicated across both lists). Admins can also send individual test emails from the dashboard for preview.
 
 From address used: `"American Seekers Academy" <contact@americanseekersacademy.com>`
 
