@@ -1116,6 +1116,18 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
   });
 
   useEffect(() => {
+    if (announcementsQuery.error) {
+      toast({
+        title: "Failed to load announcements",
+        description: announcementsQuery.error instanceof Error 
+          ? announcementsQuery.error.message 
+          : "Could not fetch announcements. Check console for details.",
+        variant: "destructive",
+      });
+    }
+  }, [announcementsQuery.error]);
+
+  useEffect(() => {
     if (announcementsQuery.data?.announcements) {
       setDisplayList(announcementsQuery.data.announcements);
     }
@@ -1589,10 +1601,14 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                                 if (data.success) {
                                   toast({ title: "Test email sent", description: data.message });
                                 } else {
-                                  toast({ title: "Failed to send test email", variant: "destructive" });
+                                  const description = data.error 
+                                    ? `${data.message}: ${data.error}` 
+                                    : data.message;
+                                  toast({ title: "Failed to send test email", description, variant: "destructive" });
                                 }
-                              } catch {
-                                toast({ title: "Failed to send test email", variant: "destructive" });
+                              } catch (err) {
+                                const description = err instanceof Error ? err.message : "Network or unexpected error";
+                                toast({ title: "Failed to send test email", description, variant: "destructive" });
                               }
                             }}
                             title="Send test email to contact@americanseekersacademy.com"

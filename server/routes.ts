@@ -1177,7 +1177,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const announcementList = await storage.getAllAnnouncements();
       res.json({ success: true, announcements: announcementList });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Failed to retrieve announcements" });
+      console.error("[announcement] Failed to retrieve admin announcements:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to retrieve announcements", 
+        error: errorMessage 
+      });
     }
   });
 
@@ -1205,7 +1211,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
       } else {
-        res.status(500).json({ success: false, message: "Failed to create announcement" });
+        console.error("[announcement] Failed to create announcement:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to create announcement", 
+          error: errorMessage 
+        });
       }
     }
   });
@@ -1250,7 +1262,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
       } else {
-        res.status(500).json({ success: false, message: "Failed to update announcement" });
+        console.error("[announcement] Failed to update announcement:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to update announcement", 
+          error: errorMessage 
+        });
       }
     }
   });
@@ -1265,7 +1283,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Failed to delete announcement" });
+      console.error("[announcement] Failed to delete announcement:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete announcement", 
+        error: errorMessage 
+      });
     }
   });
 
@@ -1291,7 +1315,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ success: false, message: "Failed to send test email", error: result.error });
       }
     } catch (error) {
-      res.status(500).json({ success: false, message: "Failed to send test email" });
+      console.error(`[announcement] test-email failed for id=${id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send test email", 
+        error: errorMessage 
+      });
     }
   });
 
