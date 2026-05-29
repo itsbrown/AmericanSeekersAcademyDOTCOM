@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import RequestInfoModal from "@/components/common/RequestInfoModal";
+import SEO from "@/components/SEO";
+import ProgramJsonLd from "@/components/ProgramJsonLd";
 
 import cupcakeKids from "@assets/IMG_7597_1765752960405.jpeg";
 import classroomKids from "@assets/96CA5F6D-E59D-4895-9B53-169540E63F4A_1765753011078.jpg";
@@ -61,6 +63,13 @@ const ProgramDetail = () => {
 
   return (
     <div className="pt-20 pb-16">
+      <SEO 
+        title={`${program.name} Program`}
+        description={program.description}
+        url={`https://americanseekersacademy.com/programs/${program.slug}`}
+      />
+      <ProgramJsonLd program={program} />
+      
       <div className="container-custom">
         <div className="mb-8">
           <Link href="/#programs">

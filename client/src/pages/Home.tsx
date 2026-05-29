@@ -12,11 +12,16 @@ import FAQ from "@/components/home/FAQ";
 import CTA from "@/components/home/CTA";
 import SessionCalendar from "@/components/home/SessionCalendar";
 import Announcements from "@/components/home/Announcements";
+import SEO from "@/components/SEO";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 const Home = () => {
   const [location] = useLocation();
+
+  // Strong SEO for homepage
+  const pageTitle = "American Seekers Academy | Classical Education for Homeschool Families";
+  const pageDescription = "American Seekers Academy provides classical education for homeschool families. Our hybrid program combines in-person instruction with homeschooling, emphasizing American values and civic virtue for ages 6 months to 12th grade.";
 
   useEffect(() => {
     // Extract hash from URL and scroll to the element if it exists
@@ -40,6 +45,11 @@ const Home = () => {
 
   return (
     <>
+      <SEO 
+        title={pageTitle} 
+        description={pageDescription}
+        url="https://americanseekersacademy.com"
+      />
       <Hero />
       <Announcements />
       <ChecklistSection />

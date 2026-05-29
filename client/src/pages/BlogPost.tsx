@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect } from "react";
 import type { BlogPost as BlogPostType } from "@shared/schema";
+import SEO from "@/components/SEO";
+import BlogPostJsonLd from "@/components/BlogPostJsonLd";
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -153,6 +155,7 @@ export default function BlogPost() {
                     href={shareLinks.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Share this article on Facebook"
                     className="p-2 rounded-full bg-[#1e3a5f] text-white hover:bg-[#c4a052] transition-colors"
                     data-testid="share-facebook"
                   >
@@ -162,6 +165,7 @@ export default function BlogPost() {
                     href={shareLinks.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Share this article on X (Twitter)"
                     className="p-2 rounded-full bg-[#1e3a5f] text-white hover:bg-[#c4a052] transition-colors"
                     data-testid="share-twitter"
                   >
@@ -171,6 +175,7 @@ export default function BlogPost() {
                     href={shareLinks.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Share this article on LinkedIn"
                     className="p-2 rounded-full bg-[#1e3a5f] text-white hover:bg-[#c4a052] transition-colors"
                     data-testid="share-linkedin"
                   >
@@ -180,6 +185,14 @@ export default function BlogPost() {
               </div>
             </div>
           </article>
+          <SEO 
+            title={post.title}
+            description={post.excerpt}
+            url={fullUrl}
+            type="article"
+            image={post.featuredImage}
+          />
+          <BlogPostJsonLd post={post} />
         </>
       ) : null}
     </div>

@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Calendar, ArrowRight, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import SEO from "@/components/SEO";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogList() {
@@ -13,36 +13,16 @@ export default function BlogList() {
 
   const posts = data?.posts || [];
 
-  useEffect(() => {
-    document.title = "Blog | American Seekers Academy - Classical Education Insights";
-    
-    const updateOrCreateMeta = (selector: string, content: string, isProperty = false) => {
-      let meta = document.querySelector(selector) as HTMLMetaElement | null;
-      if (meta) {
-        meta.setAttribute("content", content);
-      } else {
-        meta = document.createElement("meta");
-        if (isProperty) {
-          const propMatch = selector.match(/property="([^"]+)"/);
-          if (propMatch) meta.setAttribute("property", propMatch[1]);
-        } else {
-          const nameMatch = selector.match(/name="([^"]+)"/);
-          if (nameMatch) meta.setAttribute("name", nameMatch[1]);
-        }
-        meta.setAttribute("content", content);
-        document.head.appendChild(meta);
-      }
-    };
-
-    const descriptionContent = "Discover insights, tips, and stories about classical education, homeschooling, and raising children with civic virtue from American Seekers Academy.";
-    
-    updateOrCreateMeta('meta[name="description"]', descriptionContent);
-    updateOrCreateMeta('meta[property="og:title"]', "Blog | American Seekers Academy", true);
-    updateOrCreateMeta('meta[property="og:description"]', descriptionContent, true);
-    updateOrCreateMeta('meta[property="og:type"]', "website", true);
-  }, []);
+  const pageTitle = "Blog | American Seekers Academy - Classical Education Insights";
+  const pageDescription = "Discover insights, tips, and stories about classical education, homeschooling, and raising children with civic virtue from American Seekers Academy.";
 
   return (
+    <>
+      <SEO 
+        title={pageTitle} 
+        description={pageDescription}
+        url="https://americanseekersacademy.com/blog"
+      />
     <div className="min-h-screen bg-[hsl(40,33%,98%)] pt-20">
       <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] text-white py-16">
         <div className="container mx-auto px-4">
@@ -129,5 +109,6 @@ export default function BlogList() {
         )}
       </div>
     </div>
+    </>
   );
 }
