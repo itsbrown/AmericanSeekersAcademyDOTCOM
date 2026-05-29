@@ -452,6 +452,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // =============================================================================
+  // Rate limiting specifically for admin login (brute force protection)
+  // =============================================================================
+  const LOGIN_LIMIT = parseInt(process.env.ADMIN_LOGIN_RATE_LIMIT || "5", 10);
+  const LOGIN_WINDOW_MS = parseInt(process.env.ADMIN_LOGIN_RATE_WINDOW_MINUTES || "15", 10) * 60 * 1000;
+
+  const loginRateLimit = new Map<string, { count: number; resetTime: number }>();
+  let lastLoginRateLimitLog = 0;
+
+  function isLoginRateLimited(ip: string): boolean {
+    const now = Date.now();
+    let entry = loginRateLimit.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+      loginRateLimit.set(ip, { count: 1, resetTime: now + LOGIN_WINDOW_MS });
+      return false;
+    }
+
+    if (entry.count >= LOGIN_LIMIT) {
+      if (now - lastLoginRateLimitLog > 30000) {
+        console.warn(`[admin] Login rate limit hit for IP ${ip} (${LOGIN_LIMIT} attempts / ${LOGIN_WINDOW_MS / 60000}min)`);
+        lastLoginRateLimitLog = now;
+      }
+      return true;
+    }
+
+    entry.count += 1;
+    return false;
+  }
+
+  // Cleanup for login rate limits
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of loginRateLimit) {
+      if (now > entry.resetTime) {
+        loginRateLimit.delete(ip);
+      }
+    }
+  }, 10 * 60 * 1000);
+
+  // Admin authentication middleware
+  const requireAdmin = async (req: Request, res: Response, next: () => void) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    
+    const token = authHeader.substring(7);
+    const session = await storage.getAdminSession(token);
+    
+    if (!session) {
+      res.status(401).json({ success: false, message: "Invalid or expired session" });
+      return;
+    }
+    
+    next();
+  };
+
   // API routes for location suggestions
   app.post("/api/location-suggestions", async (req: Request, res: Response) => {
     try {
@@ -729,46 +788,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 10 * 60 * 1000);
 
-  // =============================================================================
-  // Rate limiting specifically for admin login (brute force protection)
-  // =============================================================================
-  const LOGIN_LIMIT = parseInt(process.env.ADMIN_LOGIN_RATE_LIMIT || "5", 10);
-  const LOGIN_WINDOW_MS = parseInt(process.env.ADMIN_LOGIN_RATE_WINDOW_MINUTES || "15", 10) * 60 * 1000;
-
-  const loginRateLimit = new Map<string, { count: number; resetTime: number }>();
-  let lastLoginRateLimitLog = 0;
-
-  function isLoginRateLimited(ip: string): boolean {
-    const now = Date.now();
-    let entry = loginRateLimit.get(ip);
-
-    if (!entry || now > entry.resetTime) {
-      loginRateLimit.set(ip, { count: 1, resetTime: now + LOGIN_WINDOW_MS });
-      return false;
-    }
-
-    if (entry.count >= LOGIN_LIMIT) {
-      if (now - lastLoginRateLimitLog > 30000) {
-        console.warn(`[admin] Login rate limit hit for IP ${ip} (${LOGIN_LIMIT} attempts / ${LOGIN_WINDOW_MS / 60000}min)`);
-        lastLoginRateLimitLog = now;
-      }
-      return true;
-    }
-
-    entry.count += 1;
-    return false;
-  }
-
-  // Cleanup for login rate limits
-  setInterval(() => {
-    const now = Date.now();
-    for (const [ip, entry] of loginRateLimit) {
-      if (now > entry.resetTime) {
-        loginRateLimit.delete(ip);
-      }
-    }
-  }, 10 * 60 * 1000);
-
   // Analytics - Track page view (public endpoint)
   // Protected with light per-IP rate limiting to reduce spam/abuse.
   app.post("/api/analytics/pageview", async (req: Request, res: Response) => {
@@ -788,25 +807,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ success: false });
     }
   });
-
-  // Admin authentication middleware
-  const requireAdmin = async (req: Request, res: Response, next: () => void) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    
-    const token = authHeader.substring(7);
-    const session = await storage.getAdminSession(token);
-    
-    if (!session) {
-      res.status(401).json({ success: false, message: "Invalid or expired session" });
-      return;
-    }
-    
-    next();
-  };
 
   // Admin login (with rate limiting to protect against brute force)
   app.post("/api/admin/login", async (req: Request, res: Response) => {
