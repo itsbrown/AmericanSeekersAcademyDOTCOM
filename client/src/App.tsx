@@ -11,6 +11,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import SmsPolicy from "@/pages/SmsPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
+import Employment from "@/pages/Employment";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnalyticsTracker from "@/components/common/AnalyticsTracker";
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/sms-policy" component={SmsPolicy} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-use" component={TermsOfUse} />
+      <Route path="/employment" component={Employment} />
       <Route component={NotFound} />
     </Switch>
   );
