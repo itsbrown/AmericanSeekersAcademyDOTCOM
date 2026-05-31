@@ -12,6 +12,7 @@ import SmsPolicy from "@/pages/SmsPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import Employment from "@/pages/Employment";
+import LocationHub from "@/components/LocationHub";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnalyticsTracker from "@/components/common/AnalyticsTracker";
@@ -29,6 +30,11 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-use" component={TermsOfUse} />
       <Route path="/employment" component={Employment} />
+      <Route path="/brighton" component={() => <LocationHub citySlug="brighton" />} />
+      <Route path="/greece" component={() => <LocationHub citySlug="greece" />} />
+      <Route path="/victor" component={() => <LocationHub citySlug="victor" />} />
+      <Route path="/batavia" component={() => <LocationHub citySlug="batavia" />} />
+      <Route path="/angelica" component={() => <LocationHub citySlug="angelica" />} />
       <Route component={NotFound} />
     </Switch>
   );

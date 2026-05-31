@@ -341,3 +341,83 @@ export const locations = [
     hours: "Monday, Wednesday, Friday 9am-3pm"
   }
 ];
+
+// ============================================
+// Location Hub Pages (for SEO - city-specific landing pages)
+// ============================================
+
+export interface LocationPageData {
+  slug: string;           // URL slug, e.g. "brighton"
+  city: string;           // Display city name, e.g. "Brighton"
+  fullName: string;       // e.g. "Brighton Campus"
+  metaTitle: string;
+  metaDescription: string;
+  heroSubtitle: string;
+  intro: string;
+  localHighlights?: string[];
+  schedule: string;
+  address?: string;
+}
+
+export const locationPages: Record<string, LocationPageData> = {
+  brighton: {
+    slug: "brighton",
+    city: "Brighton",
+    fullName: "Brighton Campus",
+    metaTitle: "Classical Education in Brighton NY | American Seekers Academy",
+    metaDescription: "American Seekers Academy offers classical education for homeschool families in Brighton, NY. Hybrid programs for ages 6 months–12th grade with a focus on American values and civic virtue.",
+    heroSubtitle: "Classical education for homeschool families in Brighton and surrounding communities.",
+    intro: "Our Brighton campus provides a warm, structured environment where students receive rich in-person instruction while families maintain the flexibility of homeschooling.",
+    schedule: "Monday, Wednesday, Friday | 9:00 AM – 3:00 PM",
+    localHighlights: [
+      "Conveniently located for families in Brighton, Pittsford, and Irondequoit",
+      "Strong community of local homeschool families",
+    ],
+  },
+  greece: {
+    slug: "greece",
+    city: "Greece",
+    fullName: "Greece Campus",
+    metaTitle: "Classical Education in Greece NY | American Seekers Academy",
+    metaDescription: "American Seekers Academy brings classical education to homeschool families in Greece, NY. Part-time in-person programs emphasizing wisdom, virtue, and liberty.",
+    heroSubtitle: "Classical education for homeschool families in Greece and the greater Rochester area.",
+    intro: "Our Greece campus serves families across Greece, Spencerport, and nearby towns with the same high-quality classical instruction and supportive community.",
+    schedule: "Monday, Wednesday, Friday | 9:00 AM – 3:00 PM",
+    localHighlights: [
+      "Serving families in Greece, Spencerport, and Hilton",
+      "Easy access from the west side of Rochester",
+    ],
+  },
+  // Future locations (placeholders - content to be expanded)
+  victor: {
+    slug: "victor",
+    city: "Victor",
+    fullName: "Victor Campus",
+    metaTitle: "Classical Education in Victor NY | American Seekers Academy",
+    metaDescription: "American Seekers Academy is expanding to Victor, NY. Classical homeschool education with in-person instruction.",
+    heroSubtitle: "Coming soon to Victor, NY.",
+    intro: "Details about our upcoming Victor campus coming soon.",
+    schedule: "Monday, Wednesday, Friday | 9:00 AM – 3:00 PM",
+  },
+  batavia: {
+    slug: "batavia",
+    city: "Batavia",
+    fullName: "Batavia Campus",
+    metaTitle: "Classical Education in Batavia NY | American Seekers Academy",
+    metaDescription: "American Seekers Academy is expanding to Batavia, NY. Classical homeschool education with in-person instruction.",
+    heroSubtitle: "Coming soon to Batavia, NY.",
+    intro: "Details about our upcoming Batavia campus coming soon.",
+    schedule: "Monday, Wednesday, Friday | 9:00 AM – 3:00 PM",
+  },
+  angelica: {
+    slug: "angelica",
+    city: "Angelica",
+    fullName: "Angelica Campus",
+    metaTitle: "Classical Education in Angelica NY | American Seekers Academy",
+    metaDescription: "American Seekers Academy is expanding to Angelica, NY. Classical homeschool education with in-person instruction.",
+    heroSubtitle: "Coming soon to Angelica, NY.",
+    intro: "Details about our upcoming Angelica campus coming soon.",
+    schedule: "Monday, Wednesday, Friday | 9:00 AM – 3:00 PM",
+  },
+};
+

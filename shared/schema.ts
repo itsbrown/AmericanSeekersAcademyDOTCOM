@@ -206,6 +206,7 @@ export const registrationWaitlist = pgTable("registration_waitlist", {
   email: text("email").notNull(),
   phone: text("phone"),
   programInterest: text("program_interest"),
+  locationInterest: text("location_interest"), // New field for location-specific waitlists
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -216,6 +217,7 @@ export const insertRegistrationWaitlistSchema = createInsertSchema(registrationW
 }).extend({
   phone: z.string().optional(),
   programInterest: z.string().optional(),
+  locationInterest: z.string().optional(),
 });
 
 export type InsertRegistrationWaitlist = z.infer<typeof insertRegistrationWaitlistSchema>;

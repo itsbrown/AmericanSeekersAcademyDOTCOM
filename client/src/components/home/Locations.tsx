@@ -1,6 +1,7 @@
 import { locations } from '@/lib/constants';
 import LocationForm from '../common/LocationForm';
 import { MapPin, Clock, Building2 } from 'lucide-react';
+import { Link } from 'wouter';
 
 const Locations = () => {
   return (
@@ -27,29 +28,36 @@ const Locations = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-6">
-                  {locations.map((location, index) => (
-                    <div 
-                      key={index} 
-                      className="flex p-4 rounded-lg bg-muted/30 border border-border/30"
-                      data-testid={`location-${index}`}
-                    >
-                      <div className="mr-4">
-                        <span className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary">
-                          <MapPin className="h-6 w-6" />
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-foreground mb-1">{location.name}</h4>
-                        {location.address && (
-                          <p className="text-muted-foreground text-sm mb-2">{location.address}</p>
-                        )}
-                        <p className="inline-flex items-center text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {location.hours}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                  {locations.map((location, index) => {
+                    const slug = location.name.toLowerCase().replace(' campus', '');
+                    return (
+                      <Link 
+                        key={index} 
+                        href={`/${slug}`}
+                        className="flex p-4 rounded-lg bg-muted/30 border border-border/30 hover:border-primary/50 transition-colors group"
+                        data-testid={`location-${index}`}
+                      >
+                        <div className="mr-4">
+                          <span className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                            <MapPin className="h-6 w-6" />
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-foreground mb-1 group-hover:text-primary transition-colors">{location.name}</h4>
+                          {location.address && (
+                            <p className="text-muted-foreground text-sm mb-2">{location.address}</p>
+                          )}
+                          <p className="inline-flex items-center text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {location.hours}
+                          </p>
+                          <span className="text-xs text-primary font-medium mt-2 inline-block group-hover:underline">
+                            View {location.name.replace(' Campus', '')} page →
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </div>

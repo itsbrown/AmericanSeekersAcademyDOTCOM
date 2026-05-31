@@ -55,6 +55,11 @@ const Header = () => {
     { href: "#faq", label: "FAQ", testId: "nav-faq", isSection: true },
     { href: "/blog", label: "Blog", testId: "nav-blog", isSection: false },
     { href: "/employment", label: "Employment", testId: "nav-employment", isSection: false },
+    { href: "/brighton", label: "Brighton", testId: "nav-brighton", isSection: false },
+    { href: "/greece", label: "Greece", testId: "nav-greece", isSection: false },
+    { href: "/victor", label: "Victor", testId: "nav-victor", isSection: false },
+    { href: "/batavia", label: "Batavia", testId: "nav-batavia", isSection: false },
+    { href: "/angelica", label: "Angelica", testId: "nav-angelica", isSection: false },
   ];
 
   return (
