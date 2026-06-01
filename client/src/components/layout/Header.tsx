@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
 import ContactModal from "@/components/common/ContactModal";
 
@@ -51,15 +57,18 @@ const Header = () => {
     { href: "#programs", label: "Programs", testId: "nav-programs", isSection: true },
     { href: "#curriculum", label: "Curriculum", testId: "nav-curriculum", isSection: true },
     { href: "#about", label: "About", testId: "nav-about", isSection: true },
-    { href: "#locations", label: "Locations", testId: "nav-locations", isSection: true },
     { href: "#faq", label: "FAQ", testId: "nav-faq", isSection: true },
     { href: "/blog", label: "Blog", testId: "nav-blog", isSection: false },
     { href: "/employment", label: "Employment", testId: "nav-employment", isSection: false },
-    { href: "/brighton", label: "Brighton", testId: "nav-brighton", isSection: false },
-    { href: "/greece", label: "Greece", testId: "nav-greece", isSection: false },
-    { href: "/victor", label: "Victor", testId: "nav-victor", isSection: false },
-    { href: "/batavia", label: "Batavia", testId: "nav-batavia", isSection: false },
-    { href: "/angelica", label: "Angelica", testId: "nav-angelica", isSection: false },
+  ];
+
+  const locationLinks = [
+    { href: "/brighton", label: "Brighton" },
+    { href: "/greece", label: "Greece" },
+    { href: "/victor", label: "Victor (Coming Soon)" },
+    { href: "/batavia", label: "Batavia (Coming Soon)" },
+    { href: "/angelica", label: "Angelica (Coming Soon)" },
+    { href: "#locations", label: "All Campuses" },
   ];
 
   return (
@@ -110,6 +119,31 @@ const Header = () => {
                   )}
                 </li>
               ))}
+              {/* Locations Dropdown */}
+              <li>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button 
+                      className="flex items-center gap-1 text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                      data-testid="nav-locations"
+                    >
+                      Locations <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 bg-[#1e3a5f] border-white/20 text-white">
+                    {locationLinks.map((link) => (
+                      <DropdownMenuItem key={link.href} asChild>
+                        <Link 
+                          href={link.href} 
+                          className="w-full cursor-pointer hover:bg-white/10"
+                        >
+                          {link.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </li>
               <li>
                 <a
                   href="https://givebutter.com/american-seekers-academy"
@@ -207,6 +241,18 @@ const Header = () => {
                 {link.label}
               </Link>
             )
+          ))}
+          {/* Mobile Locations */}
+          <div className="px-4 pt-3 pb-1 text-xs uppercase tracking-widest text-white/50">Locations</div>
+          {locationLinks.map((link) => (
+            <Link 
+              key={link.href}
+              href={link.href}
+              onClick={closeMenu}
+              className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-2.5 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              {link.label}
+            </Link>
           ))}
           <a
             href="https://givebutter.com/american-seekers-academy"

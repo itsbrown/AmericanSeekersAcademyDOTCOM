@@ -1433,7 +1433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/registration-waitlist/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const entries = await storage.getRegistrationWaitlistEntries();
-      const header = "ID,Name,Email,Phone,Program Interest,Signed Up At\n";
+      const header = "ID,Name,Email,Phone,Program Interest,Location Interest,Signed Up At\n";
       const rows = entries.map(e =>
         [
           e.id,
@@ -1441,6 +1441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `"${(e.email || "").replace(/"/g, '""')}"`,
           `"${(e.phone || "").replace(/"/g, '""')}"`,
           `"${(e.programInterest || "").replace(/"/g, '""')}"`,
+          `"${(e.locationInterest || "").replace(/"/g, '""')}"`,
           `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
         ].join(",")
       ).join("\n");

@@ -603,6 +603,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Program Interest</TableHead>
+                        <TableHead>Location Interest</TableHead>
                         <TableHead>Signed Up</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -615,6 +616,11 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           <TableCell>
                             {entry.programInterest
                               ? entry.programInterest.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {entry.locationInterest
+                              ? entry.locationInterest.charAt(0).toUpperCase() + entry.locationInterest.slice(1)
                               : "—"}
                           </TableCell>
                           <TableCell className="text-gray-500 text-sm">
