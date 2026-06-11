@@ -198,6 +198,12 @@ export const announcements = pgTable("announcements", {
   // Set when we have sent email notifications to contacts about this announcement going live.
   // Used to prevent duplicate notifications if an announcement is toggled published multiple times.
   notificationSentAt: timestamp("notification_sent_at", { withTimezone: true }),
+  // Set when an admin explicitly clicks "Post to Facebook" for this announcement.
+  // Used only for display/history ("Last posted") in the admin list. Buttons remain available anytime.
+  facebookPostedAt: timestamp("facebook_posted_at", { withTimezone: true }),
+  // Set when an admin explicitly triggers a post to Google Business Profile (via webhook or future direct).
+  // Used only for display/history in the admin list. Buttons remain available anytime.
+  googlePostedAt: timestamp("google_posted_at", { withTimezone: true }),
 });
 
 export const registrationWaitlist = pgTable("registration_waitlist", {

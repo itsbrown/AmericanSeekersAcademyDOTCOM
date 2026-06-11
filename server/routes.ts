@@ -438,6 +438,118 @@ async function sendAnnouncementLiveNotification(announcement: Announcement): Pro
   }
 }
 
+/**
+ * Builds a clean message for Facebook (and payload for Google webhook).
+ * Uses the same type labeling as the email announcements for consistency.
+ */
+function buildSocialPostText(announcement: Announcement): { message: string; link?: string } {
+  const typeLabel = announcement.type === "new-class" ? "New Class"
+                  : announcement.type === "update" ? "Update"
+                  : "Announcement";
+
+  const link = announcement.url || "https://americanseekersacademy.com";
+
+  const message = `${typeLabel} — American Seekers Academy\n\n${announcement.title}\n\n${announcement.content}\n\n${link}`;
+
+  return { message, link: announcement.url || undefined };
+}
+
+/**
+ * Posts the announcement to the configured Facebook Page using the Graph API.
+ * Never throws. Returns structured result for good admin toasts.
+ */
+async function postToFacebook(announcement: Announcement): Promise<{ success: boolean; postId?: string; error?: string }> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  const accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+
+  if (!pageId || !accessToken) {
+    const msg = "FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN not configured";
+    console.warn(`[social:facebook] ${msg} (id=${announcement.id})`);
+    return { success: false, error: msg };
+  }
+
+  const { message, link } = buildSocialPostText(announcement);
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/feed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        ...(link ? { link } : {}),
+        access_token: accessToken,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const errorMessage = data?.error?.message || JSON.stringify(data);
+      console.error(`[social:facebook] Graph API error for id=${announcement.id}:`, data);
+      return { success: false, error: errorMessage };
+    }
+
+    console.log(`[social:facebook] Posted successfully id=${announcement.id} postId=${data.id}`);
+    return { success: true, postId: data.id };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`[social:facebook] Network/unknown error for id=${announcement.id}:`, err);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Triggers a Google Business Profile post via the configured webhook (Make.com / n8n / etc.).
+ * This is the recommended low-maintenance path for GBP in 2026.
+ * Never throws. Returns structured result.
+ */
+async function triggerGoogleBusinessPost(announcement: Announcement): Promise<{ success: boolean; error?: string }> {
+  const webhookUrl = process.env.ANNOUNCEMENT_SOCIAL_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log(`[social:google] Skipped for id=${announcement.id} — ANNOUNCEMENT_SOCIAL_WEBHOOK_URL not set`);
+    return { success: false, error: "ANNOUNCEMENT_SOCIAL_WEBHOOK_URL not configured. See plan for Make.com setup." };
+  }
+
+  const { message, link } = buildSocialPostText(announcement);
+
+  const payload = {
+    event: "announcement.post",
+    channel: "google",
+    announcement: {
+      id: announcement.id,
+      title: announcement.title,
+      content: announcement.content,
+      type: announcement.type,
+      url: announcement.url || null,
+      createdAt: announcement.createdAt,
+    },
+    socialText: message,
+    link: link || "https://americanseekersacademy.com",
+    siteUrl: "https://americanseekersacademy.com",
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(`[social:google] Webhook ${res.status} for id=${announcement.id}: ${text}`);
+      return { success: false, error: `Webhook returned status ${res.status}` };
+    }
+
+    console.log(`[social:google] Webhook triggered successfully for id=${announcement.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`[social:google] Webhook error for id=${announcement.id}:`, err);
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // External redirects
   app.get("/login", (_req: Request, res: Response) => {
@@ -930,6 +1042,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Admin social posting config status (read-only)
+  app.get("/api/admin/social-status", requireAdmin as any, async (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      facebookConfigured: !!(process.env.FACEBOOK_PAGE_ID && process.env.FACEBOOK_PAGE_ACCESS_TOKEN),
+      googleWebhookConfigured: !!process.env.ANNOUNCEMENT_SOCIAL_WEBHOOK_URL,
+    });
+  });
+
   // Per-flow admin email test endpoints
   // Each runs the SAME logic as the corresponding public form submission route,
   // then persists the HubSpot send result (statusId, sendId) to the DB for audit.
@@ -1320,6 +1441,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to send test email", 
+        error: errorMessage 
+      });
+    }
+  });
+
+  // Explicit admin action: Post this announcement to Facebook Page (real post, any time)
+  app.post("/api/admin/announcements/:id/post-facebook", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const announcement = await storage.getAnnouncement(id);
+      if (!announcement) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+
+      const result = await postToFacebook(announcement);
+
+      if (result.success) {
+        // Best-effort: record that we posted (for admin list history only)
+        try {
+          await storage.updateAnnouncement(id, { facebookPostedAt: new Date() } as any);
+        } catch (e) {
+          console.error("[social] Failed to mark facebookPostedAt", e);
+        }
+        res.json({ success: true, message: "Posted to Facebook", postId: result.postId });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to post to Facebook", error: result.error });
+      }
+    } catch (error) {
+      console.error(`[announcement] post-facebook failed for id=${id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to post to Facebook", 
+        error: errorMessage 
+      });
+    }
+  });
+
+  // Explicit admin action: Trigger post to Google Business Profile via webhook (real post, any time)
+  app.post("/api/admin/announcements/:id/post-google", requireAdmin as any, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const announcement = await storage.getAnnouncement(id);
+      if (!announcement) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+
+      const result = await triggerGoogleBusinessPost(announcement);
+
+      if (result.success) {
+        // Best-effort: record that we triggered (for admin list history only)
+        try {
+          await storage.updateAnnouncement(id, { googlePostedAt: new Date() } as any);
+        } catch (e) {
+          console.error("[social] Failed to mark googlePostedAt", e);
+        }
+        res.json({ success: true, message: "Google Business Profile post triggered (via webhook)" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to trigger Google Business Profile post", error: result.error });
+      }
+    } catch (error) {
+      console.error(`[announcement] post-google failed for id=${id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to trigger Google Business Profile post", 
         error: errorMessage 
       });
     }

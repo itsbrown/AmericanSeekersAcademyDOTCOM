@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
+import { SiFacebook } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1593,6 +1594,60 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             title={a.pinned ? "Unpin" : "Pin"}
                           >
                             <Pin className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/admin/announcements/${a.id}/post-facebook`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast({ title: "Posted to Facebook", description: data.message });
+                                } else {
+                                  const description = data.error 
+                                    ? `${data.message}: ${data.error}` 
+                                    : data.message;
+                                  toast({ title: "Failed to post to Facebook", description, variant: "destructive" });
+                                }
+                              } catch (err) {
+                                const description = err instanceof Error ? err.message : "Network or unexpected error";
+                                toast({ title: "Failed to post to Facebook", description, variant: "destructive" });
+                              }
+                            }}
+                            title="Post this announcement to Facebook Page"
+                          >
+                            <SiFacebook className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/admin/announcements/${a.id}/post-google`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast({ title: "Google post triggered", description: data.message });
+                                } else {
+                                  const description = data.error 
+                                    ? `${data.message}: ${data.error}` 
+                                    : data.message;
+                                  toast({ title: "Failed to trigger Google Business Profile post", description, variant: "destructive" });
+                                }
+                              } catch (err) {
+                                const description = err instanceof Error ? err.message : "Network or unexpected error";
+                                toast({ title: "Failed to trigger Google Business Profile post", description, variant: "destructive" });
+                              }
+                            }}
+                            title="Post / trigger this announcement to Google Business Profile"
+                          >
+                            <Globe className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
