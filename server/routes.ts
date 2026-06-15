@@ -499,15 +499,17 @@ async function postToFacebook(announcement: Announcement): Promise<{ success: bo
 }
 
 /**
- * Triggers a Google Business Profile post via the configured webhook (Make.com / n8n / etc.).
- * This is the recommended low-maintenance path for GBP in 2026.
+ * Triggers a Google Business Profile post via the configured webhook.
+ * Works with Zapier (Webhooks by Zapier "Catch Hook" + Google Business Profile "Create Post" action),
+ * Make.com, n8n, or any other service that can receive a POST with JSON.
+ * This is the recommended low-maintenance path for GBP (no Google Cloud OAuth or refresh tokens in our code).
  * Never throws. Returns structured result.
  */
 async function triggerGoogleBusinessPost(announcement: Announcement): Promise<{ success: boolean; error?: string }> {
   const webhookUrl = process.env.ANNOUNCEMENT_SOCIAL_WEBHOOK_URL;
   if (!webhookUrl) {
     console.log(`[social:google] Skipped for id=${announcement.id} — ANNOUNCEMENT_SOCIAL_WEBHOOK_URL not set`);
-    return { success: false, error: "ANNOUNCEMENT_SOCIAL_WEBHOOK_URL not configured. See plan for Make.com setup." };
+    return { success: false, error: "ANNOUNCEMENT_SOCIAL_WEBHOOK_URL not configured. See the Zapier (or Make.com) setup instructions in the plan." };
   }
 
   const { message, link } = buildSocialPostText(announcement);
