@@ -499,12 +499,16 @@ async function postToFacebook(announcement: Announcement): Promise<{ success: bo
         errorMessage += ` — Your Facebook Page access token has expired or been invalidated. Fix: Generate a new long-lived Page Access Token (best: use a System User token from Meta Business Manager). Update FACEBOOK_PAGE_ACCESS_TOKEN in Replit Secrets and redeploy.`;
       } else if (code === 200) {
         errorMessage += ` — This is usually a permissions problem. Common fixes: 
-1. You MUST use a Page Access Token (the one returned for your specific page from /me/accounts), NOT a plain User Access Token.
-2. In Graph API Explorer: generate a User token with the permissions, then in the top-right dropdown switch to your Page to get its Page token.
-3. Re-generate the token AFTER adding the permissions (pages_manage_posts is required for posting).
-4. If the app is still in Development mode, only app admins/developers can post — add yourself as a tester or switch the app to Live.
-5. The Facebook user who generated the token must have a sufficient role on the Page (Admin or Content Creator at minimum).
-6. Double-check that the exact PAGE_ID matches the one the token was issued for.`;
+1. You MUST use a **Page Access Token** (the one returned for your specific page from /me/accounts), NOT a plain User Access Token.
+2. Quick way in Graph API Explorer: 
+   a. Generate a User token with pages_manage_posts selected.
+   b. At the very top (next to the token), use the dropdown/context selector and switch from your user to the actual Page.
+   c. Copy the token that appears now — that is the Page Access Token you put in FACEBOOK_PAGE_ACCESS_TOKEN.
+3. More reliable way: After having a valid User token with the perm, call GET /me/accounts?access_token=USER_TOKEN and copy the "access_token" field from the object for your page.
+4. You must re-generate the token AFTER the permissions were added/selected.
+5. If your Meta App is still in "Development" mode, only the app's admins/developers/testers can post to pages. Add the account as a tester or set the app to Live.
+6. The account that created the token must have "Admin" or at least "Content Creator" role on the Facebook Page itself (Page Settings > Page Roles).
+7. Confirm FACEBOOK_PAGE_ID is the correct numeric ID for the page the token belongs to.`;
       }
 
       return { success: false, error: errorMessage };
