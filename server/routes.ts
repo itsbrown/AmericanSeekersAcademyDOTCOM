@@ -484,8 +484,15 @@ async function postToFacebook(announcement: Announcement): Promise<{ success: bo
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const errorMessage = data?.error?.message || JSON.stringify(data);
+      let errorMessage = data?.error?.message || JSON.stringify(data);
       console.error(`[social:facebook] Graph API error for id=${announcement.id}:`, data);
+
+      // Give helpful guidance for the most common production issue: expired/invalidated tokens
+      const lowerErr = errorMessage.toLowerCase();
+      if (lowerErr.includes('validating access token') || lowerErr.includes('expired') || data?.error?.code === 190) {
+        errorMessage = `${errorMessage} — Your Facebook Page access token has expired or been invalidated. Fix: Generate a new long-lived Page Access Token using the Graph API Explorer (or better, create a System User in Meta Business Manager for a stable, long-lasting token that rarely expires). Update the FACEBOOK_PAGE_ACCESS_TOKEN secret in Replit and redeploy.`;
+      }
+
       return { success: false, error: errorMessage };
     }
 

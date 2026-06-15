@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
-import { SiFacebook } from "react-icons/si";
+import { SiFacebook, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1647,7 +1647,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             }}
                             title="Post / trigger this announcement to Google Business Profile"
                           >
-                            <Globe className="w-4 h-4" />
+                            <SiGoogle className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
