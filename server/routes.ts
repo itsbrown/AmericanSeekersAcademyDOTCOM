@@ -471,26 +471,40 @@ async function postToFacebook(announcement: Announcement): Promise<{ success: bo
   const { message, link } = buildSocialPostText(announcement);
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/feed`, {
+    // Put access_token in the query string (more reliable than body for Graph API)
+    const url = `https://graph.facebook.com/v25.0/${pageId}/feed?access_token=${encodeURIComponent(accessToken)}`;
+
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message,
         ...(link ? { link } : {}),
-        access_token: accessToken,
       }),
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      let errorMessage = data?.error?.message || JSON.stringify(data);
+      const fbError = data?.error || {};
+      const code = fbError.code;
+      const fbMessage = fbError.message || JSON.stringify(data);
+      let errorMessage = `Facebook API error #${code || 'unknown'}: ${fbMessage}`;
+
       console.error(`[social:facebook] Graph API error for id=${announcement.id}:`, data);
 
-      // Give helpful guidance for the most common production issue: expired/invalidated tokens
-      const lowerErr = errorMessage.toLowerCase();
-      if (lowerErr.includes('validating access token') || lowerErr.includes('expired') || data?.error?.code === 190) {
-        errorMessage = `${errorMessage} — Your Facebook Page access token has expired or been invalidated. Fix: Generate a new long-lived Page Access Token using the Graph API Explorer (or better, create a System User in Meta Business Manager for a stable, long-lasting token that rarely expires). Update the FACEBOOK_PAGE_ACCESS_TOKEN secret in Replit and redeploy.`;
+      const lower = fbMessage.toLowerCase();
+
+      if (code === 190 || lower.includes('validating access token') || lower.includes('expired')) {
+        errorMessage += ` — Your Facebook Page access token has expired or been invalidated. Fix: Generate a new long-lived Page Access Token (best: use a System User token from Meta Business Manager). Update FACEBOOK_PAGE_ACCESS_TOKEN in Replit Secrets and redeploy.`;
+      } else if (code === 200) {
+        errorMessage += ` — This is usually a permissions problem. Common fixes: 
+1. You MUST use a Page Access Token (the one returned for your specific page from /me/accounts), NOT a plain User Access Token.
+2. In Graph API Explorer: generate a User token with the permissions, then in the top-right dropdown switch to your Page to get its Page token.
+3. Re-generate the token AFTER adding the permissions (pages_manage_posts is required for posting).
+4. If the app is still in Development mode, only app admins/developers can post — add yourself as a tester or switch the app to Live.
+5. The Facebook user who generated the token must have a sufficient role on the Page (Admin or Content Creator at minimum).
+6. Double-check that the exact PAGE_ID matches the one the token was issued for.`;
       }
 
       return { success: false, error: errorMessage };
