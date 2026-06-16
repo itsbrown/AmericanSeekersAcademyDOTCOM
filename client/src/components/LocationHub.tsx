@@ -142,12 +142,14 @@ export default function LocationHub({ citySlug }: LocationHubProps) {
                 Join other {location.city}-area families who are giving their children a classical education with flexibility.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link 
+                <a 
                   href="https://accounts.americanseekersacademy.com/register/2OSQEAY3" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="btn-primary inline-flex items-center justify-center"
                 >
-                  Apply Now
-                </Link>
+                  Register
+                </a>
                 <Link 
                   href="/#contact" 
                   className="inline-flex items-center justify-center border border-white/40 hover:bg-white/10 text-white px-6 py-3 rounded font-semibold transition-colors"

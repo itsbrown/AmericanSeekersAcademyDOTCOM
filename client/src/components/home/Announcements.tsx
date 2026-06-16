@@ -3,6 +3,7 @@ import { Megaphone, Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Announcement } from "@shared/schema";
+import { formatDate } from "@/lib/utils";
 
 const typeBadgeVariant = (type: string): "default" | "secondary" | "outline" => {
   switch (type) {
@@ -56,7 +57,7 @@ const Announcements = () => {
                     )}
                   </div>
                   <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
-                    {new Date(announcement.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {formatDate(announcement.createdAt, { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
                 <h3 className="font-serif font-semibold text-[#1e3a5f] text-lg mb-2">{announcement.title}</h3>

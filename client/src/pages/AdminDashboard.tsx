@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
 import { SiFacebook, SiGoogle } from "react-icons/si";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -334,7 +335,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           <TableCell>{inquiry.phone}</TableCell>
                           <TableCell>{inquiry.phoneOptOut ? <Badge variant="secondary">Opted Out</Badge> : <span className="text-gray-400">—</span>}</TableCell>
                           <TableCell className="max-w-xs truncate">{inquiry.message}</TableCell>
-                          <TableCell>{new Date(inquiry.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(inquiry.createdAt)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -380,7 +381,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           <TableCell>{suggestion.email}</TableCell>
                           <TableCell>{suggestion.location}</TableCell>
                           <TableCell className="max-w-xs truncate">{suggestion.comments || "-"}</TableCell>
-                          <TableCell>{new Date(suggestion.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(suggestion.createdAt)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -426,7 +427,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           <TableCell>{request.email}</TableCell>
                           <TableCell>{request.phone}</TableCell>
                           <TableCell>{request.programName}</TableCell>
-                          <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(request.createdAt)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -466,7 +467,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                       {newslettersQuery.data?.subscriptions?.map((sub) => (
                         <TableRow key={sub.id} data-testid={`newsletter-row-${sub.id}`}>
                           <TableCell className="font-medium">{sub.email}</TableCell>
-                          <TableCell>{new Date(sub.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(sub.createdAt)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -625,7 +626,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                               : "—"}
                           </TableCell>
                           <TableCell className="text-gray-500 text-sm">
-                            {new Date(entry.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {formatDate(entry.createdAt, { month: "short", day: "numeric", year: "numeric" })}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1572,7 +1573,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                           </div>
                           <div className="font-semibold text-[#1e3a5f]">{a.title}</div>
                           <div className="text-sm text-gray-500 mt-1">{a.content}</div>
-                          <div className="text-xs text-gray-400 mt-2">{new Date(a.createdAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-400 mt-2">{formatDate(a.createdAt)}</div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button
