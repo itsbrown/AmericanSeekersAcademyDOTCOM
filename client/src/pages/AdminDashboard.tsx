@@ -1655,25 +1655,25 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             size="sm"
                             onClick={async () => {
                               try {
-                                const res = await fetch(`/api/admin/announcements/${a.id}/test-email`, {
+                                const res = await fetch(`/api/admin/announcements/${a.id}/send`, {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json", ...getAuthHeaders() },
                                 });
                                 const data = await res.json();
                                 if (data.success) {
-                                  toast({ title: "Test email sent", description: data.message });
+                                  toast({ title: "Announcement sent", description: data.message });
                                 } else {
                                   const description = data.error 
                                     ? `${data.message}: ${data.error}` 
                                     : data.message;
-                                  toast({ title: "Failed to send test email", description, variant: "destructive" });
+                                  toast({ title: "Failed to send announcement", description, variant: "destructive" });
                                 }
                               } catch (err) {
                                 const description = err instanceof Error ? err.message : "Network or unexpected error";
                                 toast({ title: "Failed to send test email", description, variant: "destructive" });
                               }
                             }}
-                            title="Send test email to contact@americanseekersacademy.com"
+                            title="Send email to entire contact list"
                           >
                             <Send className="w-4 h-4" />
                           </Button>

@@ -1442,6 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send a test email of an announcement (useful for admins to preview before publishing)
+  // Note: this only sends to a single address. Use the /send endpoint for the full list.
   app.post("/api/admin/announcements/:id/test-email", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -1468,6 +1469,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to send test email", 
+        error: errorMessage 
+      });
+    }
+  });
+
+  // Manually send announcement email to the full contact inquiries + newsletter subscribers list
+  // This is separate from the test-email (which is for preview to one address).
+  // It will also mark notificationSentAt.
+  app.post("/api/admin/announcements/:id/send", requireAdmin as any, async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    try {
+      const announcement = await storage.getAnnouncement(id);
+      if (!announcement) {
+        res.status(404).json({ success: false, message: "Announcement not found" });
+        return;
+      }
+
+      // Fire-and-forget: send to full list (same logic as publish)
+      sendAnnouncementLiveNotification(announcement).then(async () => {
+        try {
+          await storage.updateAnnouncement(id, { notificationSentAt: new Date() } as any);
+        } catch (e) {
+          console.error("[announcement] Failed to mark notificationSentAt after manual send", e);
+        }
+      }).catch(err => {
+        console.error(`[email] manual announcement send failed (id=${id}):`, err);
+      });
+
+      res.json({ success: true, message: "Announcement email sent to contact list" });
+    } catch (error) {
+      console.error(`[announcement] send failed for id=${id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send announcement email", 
         error: errorMessage 
       });
     }
