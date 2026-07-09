@@ -1339,9 +1339,50 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                 name="image"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image URL <span className="text-gray-400 font-normal">(optional — shows on card)</span></FormLabel>
+                    <FormLabel>Image <span className="text-gray-400 font-normal">(optional — upload for card)</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="https://..." {...field} value={field.value ?? ""} />
+                      {field.value && (
+                        <div className="mb-2">
+                          <img src={field.value} alt="preview" className="max-h-24 rounded border" />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="ml-2"
+                            onClick={() => field.onChange("")}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            try {
+                              const res = await fetch("/api/admin/announcements/upload-image", {
+                                method: "POST",
+                                headers: getAuthHeaders(),
+                                body: formData,
+                              });
+                              if (!res.ok) throw new Error("Upload failed");
+                              const data = await res.json();
+                              if (data.success) {
+                                field.onChange(data.imageUrl);
+                              } else {
+                                throw new Error(data.message || "Upload failed");
+                              }
+                            } catch (err) {
+                              toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
+                            }
+                            e.target.value = "";
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1492,9 +1533,50 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             name="image"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Image URL <span className="text-gray-400 font-normal">(optional — shows on card)</span></FormLabel>
+                                <FormLabel>Image <span className="text-gray-400 font-normal">(optional — upload for card)</span></FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://..." {...field} value={field.value ?? ""} />
+                                  {field.value && (
+                                    <div className="mb-2">
+                                      <img src={field.value} alt="preview" className="max-h-24 rounded border" />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="ml-2"
+                                        onClick={() => field.onChange("")}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </div>
+                                  )}
+                                  <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const formData = new FormData();
+                                        formData.append("image", file);
+                                        try {
+                                          const res = await fetch("/api/admin/announcements/upload-image", {
+                                            method: "POST",
+                                            headers: getAuthHeaders(),
+                                            body: formData,
+                                          });
+                                          if (!res.ok) throw new Error("Upload failed");
+                                          const data = await res.json();
+                                          if (data.success) {
+                                            field.onChange(data.imageUrl);
+                                          } else {
+                                            throw new Error(data.message || "Upload failed");
+                                          }
+                                        } catch (err) {
+                                          toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
+                                        }
+                                        e.target.value = "";
+                                      }
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

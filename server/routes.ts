@@ -6,6 +6,9 @@ import sgMail from "@sendgrid/mail";
 import { storage } from "./storage";
 import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema, insertRegistrationWaitlistSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const programPdfUrls: Record<string, string> = {
   "macaronis": "/pdfs/macaronis.pdf",
@@ -323,6 +326,16 @@ async function sendWaitlistConfirmationEmail(entry: { name: string; email: strin
 }
 
 function buildAnnouncementEmailHtml(announcement: Announcement, typeLabel: string): string {
+  const baseUrl = process.env.NODE_ENV === 'production'
+    ? 'https://americanseekersacademy.com'
+    : process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+      : 'http://localhost:5000';
+
+  const imageSrc = announcement.image 
+    ? (announcement.image.startsWith('http') ? announcement.image : `${baseUrl}${announcement.image}`) 
+    : null;
+
   return `
     <html>
       <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1e3a5f; margin: 0; padding: 0;">
@@ -335,6 +348,7 @@ function buildAnnouncementEmailHtml(announcement: Announcement, typeLabel: strin
             <div style="font-size: 12px; color: #888; margin-bottom: 8px;">
               ${new Date(announcement.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </div>
+            ${imageSrc ? `<img src="${imageSrc}" alt="${announcement.title}" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 4px; margin-bottom: 16px;">` : ''}
             <h2 style="color: #1e3a5f; margin-top: 0; font-size: 22px;">${announcement.title}</h2>
             <p style="white-space: pre-line; color: #333;">${announcement.content}</p>
             ${announcement.url ? `
@@ -1508,6 +1522,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Image upload for announcements (admin only, stores in uploads/announcements)
+  const announcementImageUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        const dir = path.join(process.cwd(), "uploads", "announcements");
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, name);
+      },
+    }),
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith("image/")) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only image files are allowed"));
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max
+    },
+  });
+
+  app.post(
+    "/api/admin/announcements/upload-image",
+    requireAdmin as any,
+    announcementImageUpload.single("image"),
+    (req: Request, res: Response) => {
+      if (!req.file) {
+        res.status(400).json({ success: false, message: "No image file provided" });
+        return;
+      }
+      const imageUrl = `/uploads/announcements/${req.file.filename}`;
+      res.json({ success: true, imageUrl });
+    }
+  );
 
   // Explicit admin action: Post this announcement to Facebook Page (real post, any time)
   app.post("/api/admin/announcements/:id/post-facebook", requireAdmin as any, async (req: Request, res: Response) => {
