@@ -1364,9 +1364,13 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             const formData = new FormData();
                             formData.append("image", file);
                             try {
+                              const authHeaders = getAuthHeaders() as Record<string, string>;
+                              const headers: Record<string, string> = { ...authHeaders };
+                              delete headers['content-type'];
+                              delete headers['Content-Type'];
                               const res = await fetch("/api/admin/announcements/upload-image", {
                                 method: "POST",
-                                headers: getAuthHeaders(),
+                                headers,
                                 body: formData,
                               });
                               if (!res.ok) throw new Error("Upload failed");
@@ -1558,9 +1562,13 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                                         const formData = new FormData();
                                         formData.append("image", file);
                                         try {
-                                          const res = await fetch("/api/admin/announcements/upload-image", {
+                                          const authHeaders = getAuthHeaders() as Record<string, string>;
+                                        const headers: Record<string, string> = { ...authHeaders };
+                                        delete headers['content-type'];
+                                        delete headers['Content-Type'];
+                                        const res = await fetch("/api/admin/announcements/upload-image", {
                                             method: "POST",
-                                            headers: getAuthHeaders(),
+                                            headers,
                                             body: formData,
                                           });
                                           if (!res.ok) throw new Error("Upload failed");
