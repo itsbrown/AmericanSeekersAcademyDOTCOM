@@ -193,6 +193,7 @@ export const announcements = pgTable("announcements", {
   published: boolean("published").notNull().default(false),
   pinned: boolean("pinned").notNull().default(false),
   url: text("url"),
+  image: text("image"),
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   // Set when we have sent email notifications to contacts about this announcement going live.
@@ -238,6 +239,7 @@ export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
 }).extend({
   type: z.enum(announcementTypeEnum),
   url: z.string().url().optional().or(z.literal("")),
+  image: z.string().url().optional().or(z.literal("")),
 });
 
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;

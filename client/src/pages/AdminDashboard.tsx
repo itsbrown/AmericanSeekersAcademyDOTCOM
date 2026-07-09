@@ -1149,6 +1149,8 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       type: "general",
       published: false,
       pinned: false,
+      url: "",
+      image: "",
     },
   });
 
@@ -1160,6 +1162,8 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       type: "general",
       published: false,
       pinned: false,
+      url: "",
+      image: "",
     },
   });
 
@@ -1176,7 +1180,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
-      createForm.reset({ title: "", content: "", type: "general", published: false, pinned: false, url: "" });
+      createForm.reset({ title: "", content: "", type: "general", published: false, pinned: false, url: "", image: "" });
       toast({ title: "Announcement created" });
     },
     onError: () => {
@@ -1259,6 +1263,7 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
       published: a.published,
       pinned: a.pinned,
       url: a.url ?? "",
+      image: a.image ?? "",
     });
   };
 
@@ -1322,6 +1327,19 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Link URL <span className="text-gray-400 font-normal">(optional — makes card clickable)</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://..." {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createForm.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL <span className="text-gray-400 font-normal">(optional — shows on card)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="https://..." {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -1469,6 +1487,19 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={editForm.control}
+                            name="image"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Image URL <span className="text-gray-400 font-normal">(optional — shows on card)</span></FormLabel>
+                                <FormControl>
+                                  <Input placeholder="https://..." {...field} value={field.value ?? ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                           <div className="grid grid-cols-3 gap-3">
                             <FormField
                               control={editForm.control}
@@ -1554,7 +1585,14 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card key={a.id} className={`border ${a.pinned ? "border-[#c4a052]" : "border-gray-200"}`}>
+                  <Card key={a.id} className={`border ${a.pinned ? "border-[#c4a052]" : "border-gray-200"} ${a.image ? 'overflow-hidden' : ''}`}>
+                    {a.image && (
+                      <img
+                        src={a.image}
+                        alt={a.title}
+                        className="w-full h-20 object-cover"
+                      />
+                    )}
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">

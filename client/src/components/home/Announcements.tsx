@@ -42,7 +42,8 @@ const Announcements = () => {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {announcements.map((announcement) => {
-            const inner = (
+            const hasImage = !!announcement.image;
+            const cardContent = (
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -70,7 +71,20 @@ const Announcements = () => {
               </CardContent>
             );
 
-            const cardClass = `border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"}`;
+            const cardClass = `border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"} ${hasImage ? 'overflow-hidden' : ''}`;
+
+            const cardBody = (
+              <>
+                {announcement.image && (
+                  <img
+                    src={announcement.image}
+                    alt={announcement.title}
+                    className="w-full h-32 object-cover"
+                  />
+                )}
+                {cardContent}
+              </>
+            );
 
             return announcement.url ? (
               <a
@@ -81,12 +95,12 @@ const Announcements = () => {
                 className="block focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] rounded-lg"
               >
                 <Card className={`${cardClass} hover:shadow-lg hover:border-[#1e3a5f] transition-all duration-200 cursor-pointer`}>
-                  {inner}
+                  {cardBody}
                 </Card>
               </a>
             ) : (
               <Card key={announcement.id} className={cardClass}>
-                {inner}
+                {cardBody}
               </Card>
             );
           })}
