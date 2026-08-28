@@ -15,6 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
@@ -115,6 +123,9 @@ function downloadCsv(url: string, filename: string, getAuthHeaders: () => Header
 }
 
 function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
+  const [selectedInquiry, setSelectedInquiry] = useState<ContactInquiry | null>(null);
+  const [contactSearch, setContactSearch] = useState("");
+
   const handleUnauthorized = (res: Response) => {
     if (res.status === 401) {
       clearStoredToken();
@@ -300,14 +311,22 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
           <TabsContent value="contacts">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5" />
                     Contact Inquiries
                   </CardTitle>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/contacts/export.csv", "contacts.csv", getAuthHeaders)}>
-                    <Download className="w-4 h-4" /> Export CSV
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Search inquiries..."
+                      value={contactSearch}
+                      onChange={(e) => setContactSearch(e.target.value)}
+                      className="w-64"
+                    />
+                    <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/contacts/export.csv", "contacts.csv", getAuthHeaders)}>
+                      <Download className="w-4 h-4" /> Export CSV
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -328,21 +347,97 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {contactsQuery.data?.inquiries?.map((inquiry) => (
-                        <TableRow key={inquiry.id} data-testid={`contact-row-${inquiry.id}`}>
-                          <TableCell className="font-medium">{inquiry.name}</TableCell>
-                          <TableCell>{inquiry.email}</TableCell>
-                          <TableCell>{inquiry.phone}</TableCell>
-                          <TableCell>{inquiry.phoneOptOut ? <Badge variant="secondary">Opted Out</Badge> : <span className="text-gray-400">—</span>}</TableCell>
-                          <TableCell className="max-w-xs truncate">{inquiry.message}</TableCell>
-                          <TableCell>{formatDate(inquiry.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {contactsQuery.data?.inquiries
+                        ?.filter((inquiry) => {
+                          const q = contactSearch.toLowerCase();
+                          return (
+                            inquiry.name.toLowerCase().includes(q) ||
+                            inquiry.email.toLowerCase().includes(q) ||
+                            (inquiry.message || "").toLowerCase().includes(q)
+                          );
+                        })
+                        .map((inquiry) => (
+                          <TableRow
+                            key={inquiry.id}
+                            data-testid={`contact-row-${inquiry.id}`}
+                            onClick={() => setSelectedInquiry(inquiry)}
+                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                          >
+                            <TableCell className="font-medium">{inquiry.name}</TableCell>
+                            <TableCell>{inquiry.email}</TableCell>
+                            <TableCell>{inquiry.phone}</TableCell>
+                            <TableCell>{inquiry.phoneOptOut ? <Badge variant="secondary">Opted Out</Badge> : <span className="text-gray-400">—</span>}</TableCell>
+                            <TableCell className="max-w-xs truncate">{inquiry.message}</TableCell>
+                            <TableCell>{formatDate(inquiry.createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 )}
               </CardContent>
             </Card>
+
+            {/* Contact Inquiry Detail Modal - Best in class readable view */}
+            <Dialog open={!!selectedInquiry} onOpenChange={() => setSelectedInquiry(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-serif text-xl">
+                    Contact Inquiry from {selectedInquiry?.name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Received {selectedInquiry && formatDate(selectedInquiry.createdAt, { month: "long", day: "numeric", year: "numeric" })}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div>
+                      <div className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Email</div>
+                      <a href={`mailto:${selectedInquiry?.email}`} className="text-[#1e3a5f] hover:underline font-medium">
+                        {selectedInquiry?.email}
+                      </a>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Phone</div>
+                      <div>
+                        {selectedInquiry?.phone ? (
+                          <a href={`tel:${selectedInquiry.phone}`} className="text-[#1e3a5f] hover:underline font-medium">
+                            {selectedInquiry.phone}
+                          </a>
+                        ) : "—"}
+                        {selectedInquiry?.phoneOptOut && (
+                          <Badge variant="secondary" className="ml-2">Opted out of phone follow-up</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-gray-500 text-xs uppercase tracking-wide mb-1.5">Message</div>
+                    <div className="p-4 bg-gray-50 border rounded-lg text-sm leading-relaxed whitespace-pre-wrap max-h-[280px] overflow-auto">
+                      {selectedInquiry?.message}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setSelectedInquiry(null)}>
+                    Close
+                  </Button>
+                  {selectedInquiry?.email && (
+                    <Button asChild>
+                      <a
+                        href={`mailto:${selectedInquiry.email}?subject=Re: Your inquiry to American Seekers Academy`}
+                        className="inline-flex items-center"
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Reply via Email
+                      </a>
+                    </Button>
+                  )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="locations">
@@ -683,7 +778,7 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
     refetchInterval: false,
   });
 
-  const statusQuery = useQuery<{ success: boolean; sendgridApiConfigured: boolean }>({
+  const statusQuery = useQuery<{ success: boolean; sendgridApiConfigured: boolean; contactNotificationEmail?: string; dailyExportSecretConfigured?: boolean }>({
     queryKey: ["/api/admin/email-status"],
     queryFn: async () => {
       const res = await fetch("/api/admin/email-status", { headers: getAuthHeaders() });
@@ -815,6 +910,13 @@ function EmailHealthTab({ getAuthHeaders }: { getAuthHeaders: () => HeadersInit 
         </CardHeader>
         <CardContent>
           <ConfigRow label="SENDGRID_API_KEY secret" value={status?.sendgridApiConfigured} />
+          {status?.contactNotificationEmail && (
+            <div className="flex items-center justify-between py-3 border-b">
+              <span className="text-sm font-medium text-gray-700">New inquiries email to</span>
+              <span className="font-mono text-sm text-[#1e3a5f]">{status.contactNotificationEmail}</span>
+            </div>
+          )}
+          <ConfigRow label="DAILY_EXPORT_SECRET (for scheduled CSV)" value={status?.dailyExportSecretConfigured} />
           {status && !allConfigured && (
             <div className="mt-4 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
               <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
@@ -1053,6 +1155,8 @@ function ServerVerificationLog({
     </div>
   );
 }
+
+const CHECKLIST_KEY = "hubspot-setup-checklist";
 
 function HubSpotSetupChecklist() {
   const items = [
@@ -1340,54 +1444,52 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Image <span className="text-gray-400 font-normal">(optional — upload for card)</span></FormLabel>
-                    <FormControl>
-                      {field.value && (
-                        <div className="mb-2">
-                          <img src={field.value} alt="preview" className="max-h-24 rounded border" />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="ml-2"
-                            onClick={() => field.onChange("")}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      )}
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const formData = new FormData();
-                            formData.append("image", file);
-                            try {
-                              const authHeaders = getAuthHeaders() as Record<string, string>;
-                              const headers: Record<string, string> = { ...authHeaders };
-                              delete headers['content-type'];
-                              delete headers['Content-Type'];
-                              const res = await fetch("/api/admin/announcements/upload-image", {
-                                method: "POST",
-                                headers,
-                                body: formData,
-                              });
-                              if (!res.ok) throw new Error("Upload failed");
-                              const data = await res.json();
-                              if (data.success) {
-                                field.onChange(data.imageUrl);
-                              } else {
-                                throw new Error(data.message || "Upload failed");
-                              }
-                            } catch (err) {
-                              toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
+                    {field.value && (
+                      <div className="mb-2">
+                        <img src={field.value} alt="preview" className="max-h-24 rounded border" />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => field.onChange("")}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const formData = new FormData();
+                          formData.append("image", file);
+                          try {
+                            const authHeaders = getAuthHeaders() as Record<string, string>;
+                            const headers: Record<string, string> = { ...authHeaders };
+                            delete headers['content-type'];
+                            delete headers['Content-Type'];
+                            const res = await fetch("/api/admin/announcements/upload-image", {
+                              method: "POST",
+                              headers,
+                              body: formData,
+                            });
+                            if (!res.ok) throw new Error("Upload failed");
+                            const data = await res.json();
+                            if (data.success) {
+                              field.onChange(data.imageUrl);
+                            } else {
+                              throw new Error(data.message || "Upload failed");
                             }
-                            e.target.value = "";
+                          } catch (err) {
+                            toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
                           }
-                        }}
-                      />
-                    </FormControl>
+                          e.target.value = "";
+                        }
+                      }}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1538,54 +1640,52 @@ function AnnouncementsTab({ getAuthHeaders, onLogout }: { getAuthHeaders: () => 
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Image <span className="text-gray-400 font-normal">(optional — upload for card)</span></FormLabel>
-                                <FormControl>
-                                  {field.value && (
-                                    <div className="mb-2">
-                                      <img src={field.value} alt="preview" className="max-h-24 rounded border" />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="ml-2"
-                                        onClick={() => field.onChange("")}
-                                      >
-                                        Remove
-                                      </Button>
-                                    </div>
-                                  )}
-                                  <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={async (e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        const formData = new FormData();
-                                        formData.append("image", file);
-                                        try {
-                                          const authHeaders = getAuthHeaders() as Record<string, string>;
+                                {field.value && (
+                                  <div className="mb-2">
+                                    <img src={field.value} alt="preview" className="max-h-24 rounded border" />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="ml-2"
+                                      onClick={() => field.onChange("")}
+                                    >
+                                      Remove
+                                    </Button>
+                                  </div>
+                                )}
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const formData = new FormData();
+                                      formData.append("image", file);
+                                      try {
+                                        const authHeaders = getAuthHeaders() as Record<string, string>;
                                         const headers: Record<string, string> = { ...authHeaders };
                                         delete headers['content-type'];
                                         delete headers['Content-Type'];
                                         const res = await fetch("/api/admin/announcements/upload-image", {
-                                            method: "POST",
-                                            headers,
-                                            body: formData,
-                                          });
-                                          if (!res.ok) throw new Error("Upload failed");
-                                          const data = await res.json();
-                                          if (data.success) {
-                                            field.onChange(data.imageUrl);
-                                          } else {
-                                            throw new Error(data.message || "Upload failed");
-                                          }
-                                        } catch (err) {
-                                          toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
+                                          method: "POST",
+                                          headers,
+                                          body: formData,
+                                        });
+                                        if (!res.ok) throw new Error("Upload failed");
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          field.onChange(data.imageUrl);
+                                        } else {
+                                          throw new Error(data.message || "Upload failed");
                                         }
-                                        e.target.value = "";
+                                      } catch (err) {
+                                        toast({ title: "Image upload failed", description: err instanceof Error ? err.message : "", variant: "destructive" });
                                       }
-                                    }}
-                                  />
-                                </FormControl>
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                />
                                 <FormMessage />
                               </FormItem>
                             )}
