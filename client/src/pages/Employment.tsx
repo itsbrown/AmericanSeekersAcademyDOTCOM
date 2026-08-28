@@ -13,13 +13,43 @@ interface Position {
   howToApply: string;
 }
 
+const APPLY = "https://accounts.americanseekersacademy.com/forms/mentor-application";
+const MWF = "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM and/or 9:00 AM – 3:00 PM";
+const HALF = "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM";
+const PAY = "Up to $28 per hour";
+const ABOUT = "American Seekers Academy is a classical homeschool co-op dedicated to forming wise, virtuous, and liberty-loving students. We partner with families to provide rich, in-person instruction rooted in truth, goodness, and beauty while supporting parents as the primary educators of their children.";
+
 const positions: Position[] = [
   {
+    title: "Yankee Doodles Mentor (Ages 4–5, PreK-K) — Brighton, needed ASAP",
+    locations: "Brighton",
+    schedule: MWF,
+    compensation: PAY,
+    about: ABOUT,
+    opportunity: "We need a Yankee Doodles mentor ASAP for ages 4–5 (PreK-K) at our Brighton campus. This role builds foundational skills through a classical education approach, play, and character formation.",
+    whatYoullDo: [
+      "Lead engaging, age-appropriate lessons and activities for PreK-K students",
+      "Foster a warm classroom culture of curiosity, respect, and wonder",
+      "Build early literacy, number sense, attention, and good habits",
+      "Partner with families and fellow mentors",
+      "Integrate classical formation and ideas of liberty at a developmentally appropriate level"
+    ],
+    whoWereLookingFor: [
+      "Someone who loves working with children ages 4–5",
+      "Alignment with classical education",
+      "Warm, firm, relational classroom presence",
+      "Education, homeschooling, or mentoring experience is a plus, not required",
+      "New York State teaching certification is not required"
+    ],
+    whyJoin: "You will join a mission-driven team at Brighton this fall. This role is needed ASAP.",
+    howToApply: APPLY
+  },
+  {
     title: "Upper Elementary Mentor (Grades 3–5)",
-    locations: "Brighton & Greece",
-    schedule: "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM and/or 9:00 AM – 3:00 PM",
-    compensation: "Up to $28 per hour",
-    about: "American Seekers Academy is a classical homeschool co-op dedicated to forming wise, virtuous, and liberty-loving students. We partner with families to provide rich, in-person instruction rooted in truth, goodness, and beauty while supporting parents as the primary educators of their children.",
+    locations: "Brighton",
+    schedule: MWF,
+    compensation: PAY,
+    about: ABOUT,
     opportunity: "We are seeking a mission-aligned Upper Elementary Mentor who is passionate about classical education and excited to guide students in developing strong academic foundations alongside character and wonder.",
     whatYoullDo: [
       "Lead engaging, age-appropriate lessons in literature, history, science, and the humanities",
@@ -36,13 +66,13 @@ const positions: Position[] = [
       "Previous experience in education, homeschooling, or mentoring is valued but not required"
     ],
     whyJoin: "You’ll be part of a growing community that values truth, character, and the formation of the whole child. We offer meaningful work, a supportive team, and the opportunity to shape young hearts and minds in a classical, liberty-centered environment.",
-    howToApply: "https://accounts.americanseekersacademy.com/forms/mentor-application"
+    howToApply: APPLY
   },
   {
     title: "Middle School Mentor (Grades 6–8)",
-    locations: "Brighton & Greece",
-    schedule: "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM and/or 9:00 AM – 3:00 PM",
-    compensation: "Up to $28 per hour",
+    locations: "Brighton",
+    schedule: MWF,
+    compensation: PAY,
     about: "American Seekers Academy partners with homeschool families to provide classical, in-person instruction that forms students in wisdom, virtue, and a love of liberty.",
     opportunity: "We are looking for a thoughtful and engaging Middle School Mentor who can inspire students navigating the important years of early adolescence with both academic excellence and character formation.",
     whatYoullDo: [
@@ -60,13 +90,13 @@ const positions: Position[] = [
       "Experience in education, mentoring, or homeschooling is a plus"
     ],
     whyJoin: "Join a mission-driven team that believes education should form the heart as well as the mind. You’ll have the opportunity to make a lasting impact during a pivotal stage in students’ lives.",
-    howToApply: "https://accounts.americanseekersacademy.com/forms/mentor-application"
+    howToApply: APPLY
   },
   {
     title: "High School Mentor (Grades 9–12)",
-    locations: "Brighton & Greece",
-    schedule: "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM and/or 9:00 AM – 3:00 PM",
-    compensation: "Up to $28 per hour",
+    locations: "Brighton",
+    schedule: MWF,
+    compensation: PAY,
     about: "American Seekers Academy is a classical homeschool co-op committed to forming students who are wise, virtuous, and grounded in the principles of liberty.",
     opportunity: "We are seeking a High School Mentor who can challenge and inspire older students through rich discussion, rigorous thinking, and meaningful mentorship.",
     whatYoullDo: [
@@ -84,13 +114,13 @@ const positions: Position[] = [
       "Background in education, mentoring, or a related field is highly valued"
     ],
     whyJoin: "This is an opportunity to pour into students during one of the most important seasons of their lives — helping shape not just what they know, but who they become.",
-    howToApply: "https://accounts.americanseekersacademy.com/forms/mentor-application"
+    howToApply: APPLY
   },
   {
     title: "Littles Mentor (Ages 6 months – 3 years)",
-    locations: "Brighton & Greece",
-    schedule: "Monday, Wednesday, Friday | 9:00 AM – 12:00 PM and/or 9:00 AM – 3:00 PM",
-    compensation: "Up to $28 per hour",
+    locations: "Brighton",
+    schedule: MWF,
+    compensation: PAY,
     about: "American Seekers Academy supports homeschool families by providing warm, developmentally rich environments where even our youngest students can begin forming habits of attention, wonder, and virtue.",
     opportunity: "We are seeking a nurturing and attentive Littles Mentor who loves caring for infants and toddlers and understands the importance of these early years in a child’s development.",
     whatYoullDo: [
@@ -108,7 +138,79 @@ const positions: Position[] = [
       "CPR/First Aid certified (or willing to obtain)"
     ],
     whyJoin: "You’ll play a foundational role in the lives of our youngest students and their families, helping lay the groundwork for a love of learning and healthy development from the very beginning.",
-    howToApply: "https://accounts.americanseekersacademy.com/forms/mentor-application"
+    howToApply: APPLY
+  },
+  {
+    title: "Macaronis Mentor (Ages 6 months–3 years) — Victor, Winter 2027",
+    locations: "Victor (looking to open Winter 2027)",
+    schedule: HALF,
+    compensation: PAY,
+    about: ABOUT,
+    opportunity: "We are looking to open Victor in Winter 2027 and need a Macaronis mentor for ages 6 months to 3 years. This is a half-day role. Victor is not open yet.",
+    whatYoullDo: [
+      "Provide loving, attentive care for children ages 6 months to 3 years",
+      "Create a calm, safe, and engaging environment that supports early development",
+      "Establish gentle rhythms and routines that foster security and wonder",
+      "Support early social, emotional, and language development through play and interaction",
+      "Partner with families by maintaining clear, warm communication"
+    ],
+    whoWereLookingFor: [
+      "A patient, warm, and highly responsible caregiver who genuinely enjoys this age group",
+      "Someone who values creating a peaceful, nurturing atmosphere for young children",
+      "Experience working with infants and/or toddlers (in a home, daycare, or co-op setting)",
+      "Reliable, attentive, and mission-aligned with supporting homeschool families",
+      "CPR/First Aid certified (or willing to obtain)"
+    ],
+    whyJoin: "Help launch Victor in Winter 2027 with our youngest learners.",
+    howToApply: APPLY
+  },
+  {
+    title: "Yankee Doodles Mentor (Ages 4–5, PreK-K) — Victor, Winter 2027",
+    locations: "Victor (looking to open Winter 2027)",
+    schedule: MWF,
+    compensation: PAY,
+    about: ABOUT,
+    opportunity: "We are looking to open Victor in Winter 2027 and need a Yankee Doodles mentor for ages 4–5 (PreK-K). Victor is not open yet.",
+    whatYoullDo: [
+      "Lead engaging, age-appropriate lessons and activities for PreK-K students",
+      "Foster a warm classroom culture of curiosity, respect, and wonder",
+      "Build early literacy, number sense, attention, and good habits",
+      "Partner with families and fellow mentors",
+      "Integrate classical formation and ideas of liberty at a developmentally appropriate level"
+    ],
+    whoWereLookingFor: [
+      "Someone who loves working with children ages 4–5",
+      "Alignment with classical education",
+      "Warm, firm, relational classroom presence",
+      "Education, homeschooling, or mentoring experience is a plus, not required",
+      "New York State teaching certification is not required"
+    ],
+    whyJoin: "Help launch Victor in Winter 2027 with PreK-K students.",
+    howToApply: APPLY
+  },
+  {
+    title: "Tycoons Mentor (Grades 1–2) — Victor, Winter 2027",
+    locations: "Victor (looking to open Winter 2027)",
+    schedule: MWF,
+    compensation: PAY,
+    about: ABOUT,
+    opportunity: "We are looking to open Victor in Winter 2027 and need a Tycoons mentor for grades 1–2. Victor is not open yet.",
+    whatYoullDo: [
+      "Lead engaging, age-appropriate lessons in literature, history, science, and the humanities",
+      "Foster a classroom culture of curiosity, respect, and self-governance",
+      "Help students develop strong habits of attention, memory, and clear expression",
+      "Collaborate with fellow mentors and support families in their homeschool journey",
+      "Integrate ideas of liberty, responsibility, and American heritage into daily learning"
+    ],
+    whoWereLookingFor: [
+      "A warm, relational mentor who loves working with children in grades 1–2",
+      "Someone who resonates with classical education and the principles of liberty and self-reliance",
+      "Strong classroom presence and the ability to manage a group with both kindness and clarity",
+      "Excellent communication skills and a collaborative spirit",
+      "Previous experience in education, homeschooling, or mentoring is valued but not required"
+    ],
+    whyJoin: "Help launch Victor in Winter 2027 with early elementary students.",
+    howToApply: APPLY
   }
 ];
 
@@ -117,12 +219,8 @@ export default function Employment() {
     document.title = "Employment Opportunities | American Seekers Academy";
   }, []);
 
-  // TODO: Replace email instructions with application link once available
-
-
   return (
     <div className="min-h-screen bg-[hsl(40,33%,98%)] pt-20">
-      {/* Header */}
       <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">Employment Opportunities</h1>
@@ -133,14 +231,12 @@ export default function Employment() {
       </div>
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
-        {/* Intro */}
         <div className="max-w-3xl mx-auto text-center mb-12">
           <p className="text-lg text-gray-700">
-            American Seekers Academy is growing, and we’re looking for mission-aligned mentors who are passionate about classical education and the formation of the whole child.
+            American Seekers Academy is growing, and we’re looking for mission-aligned mentors who are passionate about classical education and the formation of the whole child. Brighton is hiring now. We are looking to open Victor in Winter 2027.
           </p>
         </div>
 
-        {/* Positions */}
         <div className="space-y-16">
           {positions.map((position, index) => (
             <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-10">
