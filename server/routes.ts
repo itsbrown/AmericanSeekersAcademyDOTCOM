@@ -4,7 +4,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import sgMail from "@sendgrid/mail";
 import { storage } from "./storage";
-import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema, insertRegistrationWaitlistSchema } from "@shared/schema";
+import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema, insertRegistrationWaitlistSchema, type Announcement } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import multer from "multer";
 import path from "path";
@@ -64,6 +64,7 @@ interface EmailSendResult {
   statusId?: string;
   provider?: string;
   error?: string;
+  success?: boolean;
   [key: string]: unknown;
 }
 
@@ -168,6 +169,10 @@ async function sendEmailSafe(params: {
   };
 }
 
+function getContactNotificationEmail(): string {
+  return process.env.CONTACT_NOTIFICATION_EMAIL || "contact@americanseekersacademy.com";
+}
+
 async function sendContactInquiryNotification(inquiry: { name: string; email: string; phone: string; message: string }): Promise<EmailSendResult> {
   const htmlContent = `
     <html>
@@ -193,9 +198,11 @@ async function sendContactInquiryNotification(inquiry: { name: string; email: st
     </html>
   `;
 
+  const notifyTo = getContactNotificationEmail();
+
   // Uses the safe wrapper (never throws, has retry + consistent logging)
   return sendEmailSafe({
-    to: "contact@americanseekersacademy.com",
+    to: notifyTo,
     toName: "American Seekers Academy",
     subject: `New Contact Inquiry from ${inquiry.name}`,
     htmlContent,
@@ -227,8 +234,10 @@ async function sendLocationSuggestionNotification(suggestion: { name: string; em
     </html>
   `;
 
+  const notifyTo = getContactNotificationEmail();
+
   return sendEmailSafe({
-    to: "contact@americanseekersacademy.com",
+    to: notifyTo,
     toName: "American Seekers Academy",
     subject: `New Location Suggestion: ${suggestion.location}`,
     htmlContent,
@@ -434,7 +443,7 @@ async function sendAnnouncementLiveNotification(announcement: Announcement): Pro
     const subject = `New ${typeLabel}: ${announcement.title}`;
 
     // Fire off individual emails (non-blocking, each has its own retry via sendEmailSafe)
-    for (const [email, name] of recipients.entries()) {
+    recipients.forEach((name, email) => {
       sendEmailSafe({
         to: email,
         toName: name,
@@ -444,7 +453,7 @@ async function sendAnnouncementLiveNotification(announcement: Announcement): Pro
       }).catch(err => {
         console.error(`[email] announcement individual send failed for ${email}:`, err);
       });
-    }
+    });
 
     console.log(`[email] announcement notifications queued — id=${announcement.id}, recipients=${recipients.size} (contacts + newsletter subscribers)`);
   } catch (err) {
@@ -638,11 +647,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleanup for login rate limits
   setInterval(() => {
     const now = Date.now();
-    for (const [ip, entry] of loginRateLimit) {
+    loginRateLimit.forEach((entry, ip) => {
       if (now > entry.resetTime) {
         loginRateLimit.delete(ip);
       }
-    }
+    });
   }, 10 * 60 * 1000);
 
   // Admin authentication middleware
@@ -849,7 +858,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/blog", requireAdmin as any, async (req: Request, res: Response) => {
     try {
-      const validatedData = insertBlogPostSchema.parse(req.body);
+      // Normalize publishedAt to Date before Zod parse (client sends ISO string via JSON)
+      const body = { ...req.body };
+      if (body.publishedAt && typeof body.publishedAt === 'string') {
+        body.publishedAt = new Date(body.publishedAt);
+      }
+      const validatedData = insertBlogPostSchema.parse(body);
       const post = await storage.createBlogPost(validatedData);
       res.status(201).json({ success: true, post });
     } catch (error) {
@@ -866,7 +880,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/blog/:id", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = updateBlogPostSchema.parse(req.body);
+      // Normalize publishedAt to Date before Zod parse (client sends ISO string via JSON)
+      const body = { ...req.body };
+      if (body.publishedAt && typeof body.publishedAt === 'string') {
+        body.publishedAt = new Date(body.publishedAt);
+      }
+      const validatedData = updateBlogPostSchema.parse(body);
       const post = await storage.updateBlogPost(id, validatedData);
       if (!post) {
         res.status(404).json({ success: false, message: "Blog post not found" });
@@ -879,7 +898,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validationError = fromZodError(error);
         res.status(400).json({ success: false, message: validationError.message });
       } else {
-        res.status(500).json({ success: false, message: "Failed to update blog post" });
+        // Always try to surface a real message instead of the generic fallback
+        let errorMessage = "Failed to update blog post";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        } else if (error) {
+          try { errorMessage = JSON.stringify(error); } catch {}
+        }
+        res.status(500).json({ success: false, message: errorMessage });
       }
     }
   });
@@ -896,6 +924,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete blog post:", error);
       res.status(500).json({ success: false, message: "Failed to delete blog post" });
+    }
+  });
+
+  // Dynamic sitemap including published blog posts (overrides static build sitemap for freshness)
+  app.get("/sitemap.xml", async (_req: Request, res: Response) => {
+    try {
+      const [publishedPosts] = await Promise.all([
+        storage.getPublishedBlogPosts(),
+      ]);
+      const baseUrl = "https://americanseekersacademy.com";
+      const staticPages = [
+        "",
+        "/blog",
+        "/privacy-policy",
+        "/terms-of-use",
+        "/sms-policy",
+      ];
+      const programSlugs = ["macaronis", "yankee-doodle", "tycoons", "seekers", "pioneers", "patriots"];
+      const locationSlugs = ["brighton", "greece", "victor", "batavia", "angelica"];
+
+      const urls = [
+        ...staticPages.map((p) => `${baseUrl}${p}`),
+        ...programSlugs.map((slug) => `${baseUrl}/programs/${slug}`),
+        ...locationSlugs.map((slug) => `${baseUrl}/${slug}`),
+        ...publishedPosts.map((p) => `${baseUrl}/blog/${p.slug}`),
+      ];
+
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls
+  .map(
+    (url) => `  <url>
+    <loc>${url}</loc>
+    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${url === baseUrl ? "1.0" : "0.8"}</priority>
+  </url>`
+  )
+  .join("\n")}
+</urlset>`;
+
+      res.setHeader("Content-Type", "application/xml");
+      res.send(sitemap);
+    } catch (error) {
+      console.error("Failed to generate sitemap:", error);
+      res.status(500).send("Error generating sitemap");
     }
   });
 
@@ -934,11 +1008,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Periodic cleanup of stale rate limit entries (every 10 minutes)
   setInterval(() => {
     const now = Date.now();
-    for (const [ip, entry] of pageViewRateLimit) {
+    pageViewRateLimit.forEach((entry, ip) => {
       if (now > entry.resetTime) {
         pageViewRateLimit.delete(ip);
       }
-    }
+    });
   }, 10 * 60 * 1000);
 
   // Analytics - Track page view (public endpoint)
@@ -1080,6 +1154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       success: true,
       sendgridApiConfigured: !!process.env.SENDGRID_API_KEY,
       hubspotApiConfigured: !!process.env.HUBSPOT_API,
+      contactNotificationEmail: getContactNotificationEmail(),
+      dailyExportSecretConfigured: !!process.env.DAILY_EXPORT_SECRET,
     });
   });
 
@@ -1114,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.createContactInquiry(testInquiry);
 
-    const sentTo = "contact@americanseekersacademy.com";
+    const sentTo = getContactNotificationEmail();
     const sentAt = new Date();
 
     // sendContactInquiryNotification now uses sendEmailSafe internally (never throws)
@@ -1129,7 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Current provider fields (preferred)
       provider: "sendgrid",
       providerMessageId: emailResult?.sendId ?? null,
-      apiAccepted: emailResult.success,
+      apiAccepted: !!emailResult.success,
       errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
@@ -1142,7 +1218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       run,
       sentTo,
       message: emailResult.success
-        ? `SendGrid accepted the contact notification email. Check contact@americanseekersacademy.com inbox to confirm delivery, then mark it confirmed below.`
+        ? `SendGrid accepted the contact notification email. Check ${sentTo} inbox to confirm delivery, then mark it confirmed below.`
         : `SendGrid API call failed: ${emailResult.error}`,
     });
   });
@@ -1164,7 +1240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.createLocationSuggestion(testSuggestion);
 
-    const sentTo = "contact@americanseekersacademy.com";
+    const sentTo = getContactNotificationEmail();
     const sentAt = new Date();
 
     const emailResult = await sendLocationSuggestionNotification(testSuggestion);
@@ -1178,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Current provider fields (preferred)
       provider: "sendgrid",
       providerMessageId: emailResult?.sendId ?? null,
-      apiAccepted: emailResult.success,
+      apiAccepted: !!emailResult.success,
       errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
@@ -1191,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       run,
       sentTo,
       message: emailResult.success
-        ? `SendGrid accepted the location suggestion email. Check contact@americanseekersacademy.com to confirm delivery, then mark it confirmed below.`
+        ? `SendGrid accepted the location suggestion email. Check ${sentTo} to confirm delivery, then mark it confirmed below.`
         : `SendGrid API call failed: ${emailResult.error}`,
     });
   });
@@ -1241,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Current provider fields (preferred)
       provider: "sendgrid",
       providerMessageId: emailResult?.sendId ?? null,
-      apiAccepted: emailResult.success,
+      apiAccepted: !!emailResult.success,
       errorMessage: emailResult.error ?? null,
       sentAt,
       inboxConfirmedAt: null,
@@ -1458,8 +1534,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send a test email of an announcement (useful for admins to preview before publishing)
   // Note: this only sends to a single address. Use the /send endpoint for the full list.
   app.post("/api/admin/announcements/:id/test-email", requireAdmin as any, async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
     try {
-      const id = parseInt(req.params.id);
       const { testEmail } = req.body as { testEmail?: string };
 
       const announcement = await storage.getAnnouncement(id);
@@ -1563,11 +1639,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Image upload for blog featured images (admin only, stores in uploads/blog)
+  const blogImageUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        const dir = path.join(process.cwd(), "uploads", "blog");
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, name);
+      },
+    }),
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith("image/")) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only image files are allowed"));
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max
+    },
+  });
+
+  app.post(
+    "/api/admin/blog/upload-image",
+    requireAdmin as any,
+    blogImageUpload.single("image"),
+    (req: Request, res: Response) => {
+      if (!req.file) {
+        res.status(400).json({ success: false, message: "No image file provided" });
+        return;
+      }
+      const imageUrl = `/uploads/blog/${req.file.filename}`;
+      res.json({ success: true, imageUrl });
+    }
+  );
+
   // Explicit admin action: Post this announcement to Facebook Page (real post, any time)
   app.post("/api/admin/announcements/:id/post-facebook", requireAdmin as any, async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
     try {
-      const id = parseInt(req.params.id);
-
       const announcement = await storage.getAnnouncement(id);
       if (!announcement) {
         res.status(404).json({ success: false, message: "Announcement not found" });
@@ -1600,9 +1715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Explicit admin action: Trigger post to Google Business Profile via webhook (real post, any time)
   app.post("/api/admin/announcements/:id/post-google", requireAdmin as any, async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
     try {
-      const id = parseInt(req.params.id);
-
       const announcement = await storage.getAnnouncement(id);
       if (!announcement) {
         res.status(404).json({ success: false, message: "Announcement not found" });
@@ -1758,6 +1872,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(header + rows);
     } catch {
       res.status(500).json({ success: false, message: "Failed to export waitlist" });
+    }
+  });
+
+  // ------------------------------------------------------------------
+  // Internal / scheduled export endpoint for daily automation.
+  // Protected by a long-lived secret (DAILY_EXPORT_SECRET) instead of
+  // rotating admin session tokens. Perfect for cron / Replit workflows /
+  // GitHub Actions / cron-job.org etc.
+  //
+  // Usage: GET /api/internal/daily/contacts.csv?token=YOUR_SECRET
+  // Returns CSV with Content-Disposition attachment.
+  // ------------------------------------------------------------------
+  app.get("/api/internal/daily/contacts.csv", async (req: Request, res: Response) => {
+    const secret = process.env.DAILY_EXPORT_SECRET;
+    if (!secret || req.query.token !== secret) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    try {
+      const items = await storage.getContactInquiries();
+      const header = "ID,Name,Email,Phone,No Phone Contact,Message,Date\n";
+      const rows = items.map(e => [
+        e.id,
+        `"${(e.name || "").replace(/"/g, '""')}"`,
+        `"${(e.email || "").replace(/"/g, '""')}"`,
+        `"${(e.phone || "").replace(/"/g, '""')}"`,
+        e.phoneOptOut ? "Yes" : "No",
+        `"${(e.message || "").replace(/"/g, '""')}"`,
+        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
+      ].join(",")).join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=\"contacts.csv\"");
+      res.send(header + rows);
+    } catch {
+      res.status(500).json({ success: false, message: "Failed to export contacts" });
     }
   });
 

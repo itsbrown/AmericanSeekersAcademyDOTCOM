@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, Lock, LogOut } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, Lock, LogOut, ExternalLink } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,12 +61,25 @@ export default function BlogAdmin() {
     published: false,
   });
 
-  const handleUnauthorized = (res: Response) => {
+  const handleUnauthorized = async (res: Response) => {
     if (res.status === 401) {
       logout();
-      throw new Error("Session expired");
+      const err = new Error("Session expired");
+      (err as any).status = 401;
+      throw err;
     }
-    if (!res.ok) throw new Error("Request failed");
+    if (!res.ok) {
+      let message = "Request failed";
+      try {
+        const body = await res.clone().json();
+        if (body?.message) message = body.message;
+      } catch {
+        // ignore json parse errors
+      }
+      const err = new Error(message);
+      (err as any).status = res.status;
+      throw err;
+    }
     return res.json();
   };
 
@@ -79,8 +93,24 @@ export default function BlogAdmin() {
     retry: false,
   });
 
+  const analyticsQuery = useQuery<{ success: boolean; pageStats: { path: string; count: number }[] }>({
+    queryKey: ["/api/admin/analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/analytics", { headers: getAuthHeaders() });
+      return handleUnauthorized(res);
+    },
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   const allPosts = data?.posts || [];
   const posts = allPosts.filter((p) => !pendingDeletes.has(p.id));
+
+  const getViewCount = (slug: string) => {
+    const stats = analyticsQuery.data?.pageStats || [];
+    const stat = stats.find((s) => s.path === `/blog/${slug}`);
+    return stat ? stat.count : 0;
+  };
 
   const createMutation = useMutation({
     mutationFn: async (post: Partial<InsertBlogPost>) => {
@@ -89,7 +119,7 @@ export default function BlogAdmin() {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify(post),
       });
-      return handleUnauthorized(res);
+      return await handleUnauthorized(res);
     },
     onSuccess: async () => {
       await queryClient.refetchQueries({ queryKey: ["/api/blog/all"] });
@@ -98,8 +128,11 @@ export default function BlogAdmin() {
       resetForm();
       setIsDialogOpen(false);
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create blog post", variant: "destructive" });
+    onError: (error: any) => {
+      const status = error?.status ? ` (HTTP ${error.status})` : "";
+      const message = error?.message || "Failed to create blog post";
+      toast({ title: "Error", description: `${message}${status}`, variant: "destructive" });
+      console.error("[BlogAdmin] create failed:", error);
     },
   });
 
@@ -110,7 +143,7 @@ export default function BlogAdmin() {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify(data),
       });
-      return handleUnauthorized(res);
+      return await handleUnauthorized(res);
     },
     onSuccess: async () => {
       await queryClient.refetchQueries({ queryKey: ["/api/blog/all"] });
@@ -119,8 +152,12 @@ export default function BlogAdmin() {
       resetForm();
       setIsDialogOpen(false);
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update blog post", variant: "destructive" });
+    onError: (error: any) => {
+      const status = error?.status ? ` (HTTP ${error.status})` : "";
+      const message = error?.message || "Failed to update blog post";
+      toast({ title: "Error", description: `${message}${status}`, variant: "destructive" });
+      // Also log full error for debugging in console
+      console.error("[BlogAdmin] update failed:", error);
     },
   });
 
@@ -130,7 +167,7 @@ export default function BlogAdmin() {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-      return handleUnauthorized(res);
+      return await handleUnauthorized(res);
     },
     onMutate: (id: number) => {
       setPendingDeletes((prev) => new Set(prev).add(id));
@@ -145,13 +182,14 @@ export default function BlogAdmin() {
       });
       toast({ title: "Success", description: "Blog post deleted successfully" });
     },
-    onError: (_err, id: number) => {
+    onError: (error: any, id: number) => {
       setPendingDeletes((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
       });
-      toast({ title: "Error", description: "Failed to delete blog post", variant: "destructive" });
+      const message = error?.message || "Failed to delete blog post";
+      toast({ title: "Error", description: message, variant: "destructive" });
     },
   });
 
@@ -182,17 +220,27 @@ export default function BlogAdmin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.excerpt.length < 10 || formData.excerpt.length > 300) {
+      toast({
+        title: "Validation error",
+        description: "Excerpt must be between 10 and 300 characters for good SEO",
+        variant: "destructive",
+      });
+      return;
+    }
     const slug = formData.slug || generateSlug(formData.title);
+    // Sanitize HTML content for safety before sending
+    const sanitizedContent = DOMPurify.sanitize(formData.content);
 
     if (editingPost) {
       const updateData = {
         title: formData.title,
         slug,
         excerpt: formData.excerpt,
-        content: formData.content,
+        content: sanitizedContent,
         featuredImage: formData.featuredImage || null,
         published: formData.published,
-        publishedAt: formData.published && !editingPost.published ? new Date().toISOString() : (formData.published ? editingPost.publishedAt : null),
+        publishedAt: formData.published && !editingPost.published ? new Date() : (formData.published ? editingPost.publishedAt : null),
       };
       updateMutation.mutate({ id: editingPost.id, data: updateData });
     } else {
@@ -200,10 +248,10 @@ export default function BlogAdmin() {
         title: formData.title,
         slug,
         excerpt: formData.excerpt,
-        content: formData.content,
+        content: sanitizedContent,
         featuredImage: formData.featuredImage || null,
         published: formData.published,
-        publishedAt: formData.published ? new Date().toISOString() : null,
+        publishedAt: formData.published ? new Date() : null,
       };
       createMutation.mutate(createData);
     }
@@ -221,7 +269,7 @@ export default function BlogAdmin() {
       id: post.id,
       data: {
         published: newPublished,
-        publishedAt: newPublished ? new Date().toISOString() : null,
+        publishedAt: newPublished ? new Date() : null,
       },
     });
   };
@@ -349,7 +397,15 @@ export default function BlogAdmin() {
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => {
+                      const newTitle = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        title: newTitle,
+                        // auto slug if not manually set
+                        slug: prev.slug ? prev.slug : generateSlug(newTitle),
+                      }));
+                    }}
                     placeholder="Enter post title"
                     required
                     data-testid="input-title"
@@ -366,7 +422,7 @@ export default function BlogAdmin() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="excerpt">Excerpt</Label>
+                  <Label htmlFor="excerpt">Excerpt (10-300 chars recommended for SEO)</Label>
                   <Textarea
                     id="excerpt"
                     value={formData.excerpt}
@@ -376,6 +432,9 @@ export default function BlogAdmin() {
                     required
                     data-testid="input-excerpt"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.excerpt.length}/300 characters
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="content">Content (HTML supported)</Label>
@@ -390,13 +449,68 @@ export default function BlogAdmin() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="featuredImage">Featured Image URL (optional)</Label>
+                  <Label>Featured Image (optional)</Label>
+                  {formData.featuredImage && (
+                    <div className="mb-2">
+                      <img
+                        src={formData.featuredImage}
+                        alt="preview"
+                        className="max-h-32 rounded border"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                        onClick={() => setFormData({ ...formData, featuredImage: "" })}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
                   <Input
-                    id="featuredImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const formDataUpload = new FormData();
+                        formDataUpload.append("image", file);
+                        try {
+                          const authHeaders = getAuthHeaders() as Record<string, string>;
+                          const headers: Record<string, string> = { ...authHeaders };
+                          delete headers["content-type"];
+                          delete headers["Content-Type"];
+                          const res = await fetch("/api/admin/blog/upload-image", {
+                            method: "POST",
+                            headers,
+                            body: formDataUpload,
+                          });
+                          if (!res.ok) throw new Error("Upload failed");
+                          const data = await res.json();
+                          if (data.success) {
+                            setFormData({ ...formData, featuredImage: data.imageUrl });
+                          } else {
+                            throw new Error(data.message || "Upload failed");
+                          }
+                        } catch (err) {
+                          toast({
+                            title: "Image upload failed",
+                            description: err instanceof Error ? err.message : "",
+                            variant: "destructive",
+                          });
+                        }
+                        e.target.value = "";
+                      }
+                    }}
+                    data-testid="input-featured-image"
+                  />
+                  <Input
+                    className="mt-2"
+                    placeholder="Or paste image URL directly"
                     value={formData.featuredImage}
                     onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    data-testid="input-featured-image"
+                    data-testid="input-featured-image-url"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -456,7 +570,7 @@ export default function BlogAdmin() {
                         </span>
                       )}
                     </CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">/{post.slug}</p>
+                    <p className="text-sm text-gray-500 mt-1">/{post.slug} · {getViewCount(post.slug)} views</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -476,6 +590,16 @@ export default function BlogAdmin() {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
+                    <a 
+                      href={`/blog/${post.slug}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      title="Preview post (opens in new tab)"
+                    >
+                      <Button size="sm" variant="outline" data-testid={`preview-post-${post.id}`}>
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
                     <Button
                       size="sm"
                       variant="outline"
