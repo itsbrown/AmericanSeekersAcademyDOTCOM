@@ -942,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "/sms-policy",
       ];
       const programSlugs = ["macaronis", "yankee-doodle", "tycoons", "seekers", "pioneers", "patriots"];
-      const locationSlugs = ["brighton", "greece", "victor", "batavia", "angelica"];
+      const locationSlugs = ["brighton", "greece", "victor"];
 
       const urls = [
         ...staticPages.map((p) => `${baseUrl}${p}`),

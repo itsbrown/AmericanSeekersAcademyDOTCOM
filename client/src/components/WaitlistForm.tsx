@@ -163,8 +163,6 @@ export default function WaitlistForm({ defaultLocation, compact = false }: Waitl
                     <SelectItem value="brighton">Brighton</SelectItem>
                     <SelectItem value="greece">Greece</SelectItem>
                     <SelectItem value="victor">Victor (Coming Soon)</SelectItem>
-                    <SelectItem value="batavia">Batavia (Coming Soon)</SelectItem>
-                    <SelectItem value="angelica">Angelica (Coming Soon)</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

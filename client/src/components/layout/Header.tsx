@@ -10,6 +10,9 @@ import {
 import logoImage from "@assets/ASA_Logos-transparent-white&red_1765765829361.png";
 import ContactModal from "@/components/common/ContactModal";
 
+const navItemClass =
+  "text-white/90 hover:text-white px-2.5 py-2 text-xs font-medium uppercase transition-colors duration-200 cursor-pointer whitespace-nowrap";
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,12 +43,12 @@ const Header = () => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
     closeMenu();
-    
+
     if (location !== "/") {
       window.location.href = "/" + sectionId;
       return;
     }
-    
+
     const element = document.getElementById(sectionId.replace("#", ""));
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -53,11 +56,9 @@ const Header = () => {
   };
 
   const navLinks = [
-    { href: "#home", label: "Home", testId: "nav-home", isSection: true },
     { href: "#programs", label: "Programs", testId: "nav-programs", isSection: true },
     { href: "#curriculum", label: "Curriculum", testId: "nav-curriculum", isSection: true },
     { href: "#about", label: "About", testId: "nav-about", isSection: true },
-    { href: "#faq", label: "FAQ", testId: "nav-faq", isSection: true },
     { href: "/blog", label: "Blog", testId: "nav-blog", isSection: false },
     { href: "/employment", label: "Employment", testId: "nav-employment", isSection: false },
   ];
@@ -66,52 +67,47 @@ const Header = () => {
     { href: "/brighton", label: "Brighton" },
     { href: "/greece", label: "Greece" },
     { href: "/victor", label: "Victor (Coming Soon)" },
-    { href: "/batavia", label: "Batavia (Coming Soon)" },
-    { href: "/angelica", label: "Angelica (Coming Soon)" },
     { href: "#locations", label: "All Campuses" },
   ];
 
   return (
-    <header 
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-[#1e3a5f] shadow-lg' 
-          : 'bg-[#1e3a5f]'
+    <header
+      className={`fixed w-full z-50 overflow-x-clip transition-all duration-300 ${
+        isScrolled
+          ? "bg-[#1e3a5f] shadow-lg"
+          : "bg-[#1e3a5f]"
       }`}
       role="banner"
     >
-      {/* Main Header Bar - White House Style */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo - Left Side with Overlap Effect */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-6">
+        <div className="flex items-center justify-between h-16 md:h-20 gap-3 min-w-0">
           <div className="flex-shrink-0 relative z-20">
             <Link href="/" className="flex items-center" aria-label="American Seekers Academy Home">
-              <img 
-                src={logoImage} 
-                alt="American Seekers Academy" 
-                className="h-10 md:h-14 w-auto" 
+              <img
+                src={logoImage}
+                alt="American Seekers Academy"
+                className="h-10 md:h-14 w-auto"
               />
             </Link>
           </div>
-          
-          {/* Desktop Navigation - Right Side */}
-          <nav className="hidden lg:flex items-center" role="navigation" aria-label="Main navigation">
-            <ul className="flex items-center space-x-1">
+
+          <nav className="hidden xl:flex items-center min-w-0" role="navigation" aria-label="Main navigation">
+            <ul className="flex items-center flex-nowrap">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   {link.isSection ? (
-                    <a 
-                      href={link.href} 
-                      onClick={(e) => scrollToSection(e, link.href)} 
-                      className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                    <a
+                      href={link.href}
+                      onClick={(e) => scrollToSection(e, link.href)}
+                      className={navItemClass}
                       data-testid={link.testId}
                     >
                       {link.label}
                     </a>
                   ) : (
-                    <Link 
+                    <Link
                       href={link.href}
-                      className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                      className={navItemClass}
                       data-testid={link.testId}
                     >
                       {link.label}
@@ -119,12 +115,11 @@ const Header = () => {
                   )}
                 </li>
               ))}
-              {/* Locations Dropdown */}
               <li>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button 
-                      className="flex items-center gap-1 text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200 cursor-pointer"
+                    <button
+                      className={`flex items-center gap-1 ${navItemClass}`}
                       data-testid="nav-locations"
                     >
                       Locations <ChevronDown className="h-3 w-3" />
@@ -133,8 +128,8 @@ const Header = () => {
                   <DropdownMenuContent align="start" className="w-48 bg-[#1e3a5f] border-white/20 text-white">
                     {locationLinks.map((link) => (
                       <DropdownMenuItem key={link.href} asChild>
-                        <Link 
-                          href={link.href} 
+                        <Link
+                          href={link.href}
                           className="w-full cursor-pointer hover:bg-white/10"
                         >
                           {link.label}
@@ -149,16 +144,27 @@ const Header = () => {
                   href="https://givebutter.com/american-seekers-academy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200"
+                  className={navItemClass}
                   data-testid="nav-donate"
                 >
                   Donate
                 </a>
               </li>
               <li>
-                <button 
-                  onClick={() => setIsContactModalOpen(true)} 
-                  className="ml-4 bg-white text-[#1e3a5f] hover:bg-gray-100 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                <a
+                  href="https://accounts.americanseekersacademy.com/store/american-seekers-academy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={navItemClass}
+                  data-testid="nav-store"
+                >
+                  Store
+                </a>
+              </li>
+              <li>
+                <button
+                  onClick={() => setIsContactModalOpen(true)}
+                  className="ml-2 bg-white text-[#1e3a5f] hover:bg-gray-100 px-3 py-1.5 text-xs font-semibold uppercase rounded transition-colors duration-200 cursor-pointer whitespace-nowrap"
                   data-testid="nav-contact"
                 >
                   Contact
@@ -166,32 +172,21 @@ const Header = () => {
               </li>
               <li>
                 <a
-                  href="https://accounts.americanseekersacademy.com/store/american-seekers-academy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200"
-                  data-testid="nav-store"
-                >
-                  Store
-                </a>
-              </li>
-              <li>
-                <a 
                   href="https://accounts.americanseekersacademy.com/login"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                  className="ml-1 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-3 py-1.5 text-xs font-semibold uppercase rounded transition-colors duration-200 cursor-pointer whitespace-nowrap"
                   data-testid="nav-login"
                 >
                   Login
                 </a>
               </li>
               <li>
-                <a 
+                <a
                   href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-2 bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-5 py-2 text-sm font-semibold tracking-wide uppercase rounded transition-colors duration-200 cursor-pointer" 
+                  className="ml-1 bg-[hsl(38,75%,45%)] hover:bg-[hsl(38,75%,40%)] text-white px-3 py-1.5 text-xs font-semibold uppercase rounded transition-colors duration-200 cursor-pointer whitespace-nowrap"
                   data-testid="nav-register"
                 >
                   Register
@@ -199,11 +194,10 @@ const Header = () => {
               </li>
             </ul>
           </nav>
-          
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center">
-            <button 
-              type="button" 
+
+          <div className="flex xl:hidden items-center">
+            <button
+              type="button"
               onClick={toggleMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-white/80 hover:bg-white/10 transition-colors duration-200"
               aria-expanded={isMenuOpen}
@@ -221,28 +215,27 @@ const Header = () => {
           </div>
         </div>
       </div>
-      
-      {/* Mobile Menu */}
-      <div 
+
+      <div
         id="mobile-menu"
-        className={`lg:hidden ${isMenuOpen ? 'block' : 'hidden'}`}
+        className={`xl:hidden ${isMenuOpen ? "block" : "hidden"}`}
         role="navigation"
         aria-label="Mobile navigation"
       >
         <div className="px-4 pt-2 pb-4 space-y-1 bg-[#1e3a5f] border-t border-white/10">
           {navLinks.map((link) => (
             link.isSection ? (
-              <a 
+              <a
                 key={link.href}
-                href={link.href} 
-                onClick={(e) => scrollToSection(e, link.href)} 
+                href={link.href}
+                onClick={(e) => scrollToSection(e, link.href)}
                 className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium cursor-pointer transition-colors duration-200"
                 data-testid={`mobile-${link.testId}`}
               >
                 {link.label}
               </a>
             ) : (
-              <Link 
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={closeMenu}
@@ -253,10 +246,9 @@ const Header = () => {
               </Link>
             )
           ))}
-          {/* Mobile Locations */}
           <div className="px-4 pt-3 pb-1 text-xs uppercase tracking-widest text-white/50">Locations</div>
           {locationLinks.map((link) => (
-            <Link 
+            <Link
               key={link.href}
               href={link.href}
               onClick={closeMenu}
@@ -275,13 +267,6 @@ const Header = () => {
           >
             Donate
           </a>
-          <button 
-            onClick={() => { closeMenu(); setIsContactModalOpen(true); }} 
-            className="mt-2 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-            data-testid="mobile-nav-contact"
-          >
-            Contact
-          </button>
           <a
             href="https://accounts.americanseekersacademy.com/store/american-seekers-academy"
             target="_blank"
@@ -292,7 +277,14 @@ const Header = () => {
           >
             Store
           </a>
-          <a 
+          <button
+            onClick={() => { closeMenu(); setIsContactModalOpen(true); }}
+            className="mt-2 block w-full bg-white text-[#1e3a5f] text-center py-3 font-semibold rounded cursor-pointer hover:bg-gray-100 transition-colors duration-200"
+            data-testid="mobile-nav-contact"
+          >
+            Contact
+          </button>
+          <a
             href="https://accounts.americanseekersacademy.com/login"
             target="_blank"
             rel="noopener noreferrer"
@@ -302,7 +294,7 @@ const Header = () => {
           >
             Login
           </a>
-          <a 
+          <a
             href="https://accounts.americanseekersacademy.com/register/2OSQEAY3"
             target="_blank"
             rel="noopener noreferrer"
@@ -314,9 +306,9 @@ const Header = () => {
           </a>
         </div>
       </div>
-    <ContactModal 
-        isOpen={isContactModalOpen} 
-        onClose={() => setIsContactModalOpen(false)} 
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
       />
     </header>
   );

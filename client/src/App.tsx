@@ -33,8 +33,6 @@ function Router() {
       <Route path="/brighton" component={() => <LocationHub citySlug="brighton" />} />
       <Route path="/greece" component={() => <LocationHub citySlug="greece" />} />
       <Route path="/victor" component={() => <LocationHub citySlug="victor" />} />
-      <Route path="/batavia" component={() => <LocationHub citySlug="batavia" />} />
-      <Route path="/angelica" component={() => <LocationHub citySlug="angelica" />} />
       <Route component={NotFound} />
     </Switch>
   );

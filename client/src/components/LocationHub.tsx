@@ -9,7 +9,7 @@ interface LocationHubProps {
 
 export default function LocationHub({ citySlug }: LocationHubProps) {
   const location = locationPages[citySlug];
-  const isComingSoon = ["victor", "batavia", "angelica"].includes(citySlug);
+  const isComingSoon = citySlug === "victor";
 
   if (!location) {
     return (
