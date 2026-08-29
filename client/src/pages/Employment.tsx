@@ -214,96 +214,124 @@ const positions: Position[] = [
   }
 ];
 
+function scanTitle(title: string) {
+  return title.split(" — ")[0];
+}
+
+function isUrgent(title: string) {
+  return /asap/i.test(title);
+}
+
+function PositionDetails({ position }: { position: Position }) {
+  return (
+    <div className="prose prose-lg max-w-none text-gray-700 space-y-6 pt-4 border-t border-gray-200">
+      <p>{position.opportunity}</p>
+      <div>
+        <h3 className="font-semibold text-lg text-[#1e3a5f] mb-2">What you’ll do</h3>
+        <ul className="list-disc pl-5 space-y-1">
+          {position.whatYoullDo.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h3 className="font-semibold text-lg text-[#1e3a5f] mb-2">Who we’re looking for</h3>
+        <ul className="list-disc pl-5 space-y-1">
+          {position.whoWereLookingFor.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      </div>
+      <p className="text-sm text-gray-600">{position.schedule}</p>
+    </div>
+  );
+}
+
+function RoleRow({ position }: { position: Position }) {
+  const urgent = isUrgent(position.title);
+  return (
+    <details className="group bg-white rounded-xl border border-gray-200 shadow-sm open:shadow-md open:border-[#1e3a5f]/30">
+      <summary className="cursor-pointer list-none px-4 py-3 md:px-5 md:py-3.5 flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[12rem]">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-serif font-bold text-[#1e3a5f] text-lg leading-tight">
+              {scanTitle(position.title)}
+            </span>
+            {urgent && (
+              <span className="text-xs font-semibold uppercase tracking-wide bg-[#c4a052] text-white px-2 py-0.5 rounded">
+                Needed ASAP
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600 mt-0.5">
+            {position.locations} · {position.compensation}
+          </div>
+        </div>
+        <a
+          href={position.howToApply}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center justify-center bg-[#1e3a5f] hover:bg-[#2a4a73] text-white px-4 py-2 text-sm font-semibold rounded-lg"
+        >
+          Apply
+        </a>
+        <span className="text-sm text-[#1e3a5f] font-medium group-open:hidden">Details</span>
+        <span className="text-sm text-[#1e3a5f] font-medium hidden group-open:inline">Hide</span>
+      </summary>
+      <div className="px-4 pb-5 md:px-5">
+        <PositionDetails position={position} />
+      </div>
+    </details>
+  );
+}
+
+function RoleGroup({ heading, note, roles }: { heading: string; note: string; roles: Position[] }) {
+  return (
+    <section className="mb-10">
+      <h2 className="font-serif text-2xl font-bold text-[#1e3a5f] mb-1">{heading}</h2>
+      <p className="text-sm text-gray-600 mb-3">{note}</p>
+      <div className="space-y-2">
+        {roles.map((position) => (
+          <RoleRow key={position.title} position={position} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Employment() {
   useEffect(() => {
     document.title = "Employment Opportunities | American Seekers Academy";
   }, []);
 
+  const brighton = positions.filter((p) => p.locations.startsWith("Brighton"));
+  const victor = positions.filter((p) => p.locations.startsWith("Victor"));
+
   return (
     <div className="min-h-screen bg-[hsl(40,33%,98%)] pt-20">
-      <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] text-white py-16">
+      <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a4a73] text-white py-8">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">Employment Opportunities</h1>
-          <p className="text-xl text-white/90 max-w-3xl mx-auto">
-            Join our mission to form wise, virtuous, and liberty-loving students through classical education.
+          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Employment Opportunities</h1>
+          <p className="text-base md:text-lg text-white/90 max-w-3xl mx-auto">
+            Brighton is hiring now. We are looking to open Victor in Winter 2027. Up to $28/hr. NYS certification not required.
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
-        <div className="max-w-3xl mx-auto text-center mb-12">
-          <p className="text-lg text-gray-700">
-            American Seekers Academy is growing, and we’re looking for mission-aligned mentors who are passionate about classical education and the formation of the whole child. Brighton is hiring now. We are looking to open Victor in Winter 2027.
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <RoleGroup
+          heading="Brighton — hiring now"
+          note="MWF. Apply from any row. Open a role for the full description."
+          roles={brighton}
+        />
+        <RoleGroup
+          heading="Victor — looking to open Winter 2027"
+          note="Not open yet. We are hiring mentors now so this campus can launch."
+          roles={victor}
+        />
 
-        <div className="space-y-16">
-          {positions.map((position, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-10">
-              <div className="mb-8">
-                <h2 className="font-serif text-3xl font-bold text-[#1e3a5f] mb-3">{position.title}</h2>
-                
-                <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm text-gray-600 mb-4">
-                  <div><span className="font-medium text-[#1e3a5f]">Locations:</span> {position.locations}</div>
-                  <div><span className="font-medium text-[#1e3a5f]">Schedule:</span> {position.schedule}</div>
-                  <div><span className="font-medium text-[#1e3a5f]">Compensation:</span> {position.compensation}</div>
-                </div>
-              </div>
-
-              <div className="prose prose-lg max-w-none text-gray-700 space-y-8">
-                <div>
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-3">About American Seekers Academy</h3>
-                  <p>{position.about}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-3">The Opportunity</h3>
-                  <p>{position.opportunity}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-3">What You’ll Do</h3>
-                  <ul className="list-disc pl-5 space-y-2">
-                    {position.whatYoullDo.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-3">Who We’re Looking For</h3>
-                  <ul className="list-disc pl-5 space-y-2">
-                    {position.whoWereLookingFor.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-3">Why Join American Seekers Academy?</h3>
-                  <p>{position.whyJoin}</p>
-                </div>
-
-                <div className="bg-[#f5f0e8] border-l-4 border-[#c4a052] p-6 rounded-r-lg">
-                  <h3 className="font-semibold text-xl text-[#1e3a5f] mb-4">How to Apply</h3>
-                  <a
-                    href={position.howToApply}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center bg-[#1e3a5f] hover:bg-[#2a4a73] text-white px-8 py-3 text-base font-semibold rounded-lg transition-colors duration-200"
-                  >
-                    Apply Now →
-                  </a>
-                  <p className="text-sm text-gray-600 mt-3">
-                    You will be redirected to our online mentor application form.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center text-gray-600 text-sm">
+        <div className="mt-8 text-center text-gray-600 text-sm">
           American Seekers Academy is an equal opportunity employer committed to building a diverse and inclusive community.
         </div>
       </div>
