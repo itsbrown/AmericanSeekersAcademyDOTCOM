@@ -40,7 +40,7 @@ const Announcements = () => {
           <h2 className="font-serif text-3xl font-bold text-[#1e3a5f]">Announcements</h2>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 min-w-0">
           {announcements.map((announcement) => {
             const hasImage = !!announcement.image;
             const cardContent = (
@@ -61,8 +61,8 @@ const Announcements = () => {
                     {formatDate(announcement.createdAt, { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
-                <h3 className="font-serif font-semibold text-[#1e3a5f] text-lg mb-2">{announcement.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{announcement.content}</p>
+                <h3 className="font-serif font-semibold text-[#1e3a5f] text-lg mb-2 break-words">{announcement.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">{announcement.content}</p>
                 {announcement.url && (
                   <p className="text-xs text-[#1e3a5f] font-medium mt-3 flex items-center gap-1 opacity-70">
                     Learn more →
@@ -71,7 +71,7 @@ const Announcements = () => {
               </CardContent>
             );
 
-            const cardClass = `border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"} ${hasImage ? 'overflow-hidden' : ''}`;
+            const cardClass = `min-w-0 overflow-hidden border bg-white ${announcement.pinned ? "border-[#c4a052] shadow-md" : "border-gray-200"}`;
 
             const cardBody = (
               <>
@@ -92,7 +92,7 @@ const Announcements = () => {
                 href={announcement.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] rounded-lg"
+                className="block min-w-0 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] rounded-lg"
               >
                 <Card className={`${cardClass} hover:shadow-lg hover:border-[#1e3a5f] transition-all duration-200 cursor-pointer`}>
                   {cardBody}

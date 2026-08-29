@@ -74,7 +74,8 @@ const Footer = () => {
               <li><Link href="/#curriculum" className="text-white/70 hover:text-accent transition-colors duration-200">Curriculum</Link></li>
               <li><Link href="/#locations" className="text-white/70 hover:text-accent transition-colors duration-200">Locations</Link></li>
               <li><Link href="/#faq" className="text-white/70 hover:text-accent transition-colors duration-200">FAQ</Link></li>
-              <li><a href="#" className="text-white/70 hover:text-accent transition-colors duration-200">Become a Mentor</a></li>
+              <li><a href="https://accounts.americanseekersacademy.com/store/american-seekers-academy" target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-accent transition-colors duration-200">Store</a></li>
+              <li><Link href="/employment" className="text-white/70 hover:text-accent transition-colors duration-200">Become a Mentor</Link></li>
               <li><a href="https://givebutter.com/american-seekers-academy" target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-accent transition-colors duration-200">Donate</a></li>
               <li><Link href="/sms-policy" className="text-white/70 hover:text-accent transition-colors duration-200">SMS Policy</Link></li>
               <li><Link href="/privacy-policy" className="text-white/70 hover:text-accent transition-colors duration-200">Privacy Policy</Link></li>

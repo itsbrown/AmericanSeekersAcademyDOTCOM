@@ -165,6 +165,17 @@ const Header = () => {
                 </button>
               </li>
               <li>
+                <a
+                  href="https://accounts.americanseekersacademy.com/store/american-seekers-academy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/90 hover:text-white px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors duration-200"
+                  data-testid="nav-store"
+                >
+                  Store
+                </a>
+              </li>
+              <li>
                 <a 
                   href="https://accounts.americanseekersacademy.com/login"
                   target="_blank"
@@ -271,6 +282,16 @@ const Header = () => {
           >
             Contact
           </button>
+          <a
+            href="https://accounts.americanseekersacademy.com/store/american-seekers-academy"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="text-white/90 hover:text-white hover:bg-white/10 block px-4 py-3 rounded-md text-base font-medium transition-colors duration-200 w-full"
+            data-testid="mobile-nav-store"
+          >
+            Store
+          </a>
           <a 
             href="https://accounts.americanseekersacademy.com/login"
             target="_blank"
