@@ -17,6 +17,7 @@ export interface IStorage {
   // Location suggestion methods
   createLocationSuggestion(suggestion: InsertLocationSuggestion): Promise<LocationSuggestion>;
   getLocationSuggestions(): Promise<LocationSuggestion[]>;
+  setLocationSuggestionSpam(id: number, isSpam: boolean, spamReason: string | null): Promise<LocationSuggestion | undefined>;
   
   // Newsletter subscription methods
   subscribeToNewsletter(email: InsertNewsletter): Promise<Newsletter>;
@@ -27,6 +28,7 @@ export interface IStorage {
   
   // Contact inquiry methods
   createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry>;
+  setContactInquirySpam(id: number, isSpam: boolean, spamReason: string | null): Promise<ContactInquiry | undefined>;
   
   // Blog post methods
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
@@ -71,6 +73,7 @@ export interface IStorage {
   // Registration waitlist methods
   createRegistrationWaitlistEntry(entry: InsertRegistrationWaitlist): Promise<RegistrationWaitlistEntry>;
   getRegistrationWaitlistEntries(): Promise<RegistrationWaitlistEntry[]>;
+  setRegistrationWaitlistSpam(id: number, isSpam: boolean, spamReason: string | null): Promise<RegistrationWaitlistEntry | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +88,15 @@ export class DatabaseStorage implements IStorage {
   
   async getLocationSuggestions(): Promise<LocationSuggestion[]> {
     return await db.select().from(locationSuggestions);
+  }
+
+  async setLocationSuggestionSpam(id: number, isSpam: boolean, spamReason: string | null): Promise<LocationSuggestion | undefined> {
+    const [updated] = await db
+      .update(locationSuggestions)
+      .set({ isSpam, spamReason })
+      .where(eq(locationSuggestions.id, id))
+      .returning();
+    return updated;
   }
   
   // Newsletter subscription methods
@@ -123,6 +135,15 @@ export class DatabaseStorage implements IStorage {
       createdAt: new Date()
     }).returning();
     return contactInquiry;
+  }
+
+  async setContactInquirySpam(id: number, isSpam: boolean, spamReason: string | null): Promise<ContactInquiry | undefined> {
+    const [updated] = await db
+      .update(contactInquiries)
+      .set({ isSpam, spamReason })
+      .where(eq(contactInquiries.id, id))
+      .returning();
+    return updated;
   }
   
   // Blog post methods
@@ -334,6 +355,15 @@ export class DatabaseStorage implements IStorage {
 
   async getRegistrationWaitlistEntries(): Promise<RegistrationWaitlistEntry[]> {
     return await db.select().from(registrationWaitlist).orderBy(desc(registrationWaitlist.createdAt));
+  }
+
+  async setRegistrationWaitlistSpam(id: number, isSpam: boolean, spamReason: string | null): Promise<RegistrationWaitlistEntry | undefined> {
+    const [updated] = await db
+      .update(registrationWaitlist)
+      .set({ isSpam, spamReason })
+      .where(eq(registrationWaitlist.id, id))
+      .returning();
+    return updated;
   }
 }
 

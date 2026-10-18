@@ -100,10 +100,11 @@ The server provides:
 
 Current schema includes:
 - `users` - Basic user authentication (id, username, password)
-- `locationSuggestions` - User-submitted location requests (name, email, location, comments)
+- `locationSuggestions` - User-submitted location requests (name, email, location, comments, isSpam, spamReason)
 - `newsletters` - Email subscriptions (email, createdAt)
 - `programInfoRequests` - Program information requests (name, email, phone, programSlug, programName)
-- `contactInquiries` - Contact form submissions (name, email, phone, message)
+- `contactInquiries` - Contact form submissions (name, email, phone, message, isSpam, spamReason)
+- `registrationWaitlist` - Fall registration waitlist (name, email, phone, programInterest, locationInterest, isSpam, spamReason)
 - `blogPosts` - Blog posts (title, slug, excerpt, content, featuredImage, published, publishedAt, createdAt)
 - `emailTestRuns` - Audit log of admin email delivery tests (flow, sentTo, hubspotStatusId, hubspotSendId, apiAccepted, errorMessage, sentAt, inboxConfirmedAt, confirmedBy)
 
@@ -162,6 +163,12 @@ The blog system includes:
 | `ADMIN_PASSWORD` | Shared password for the `/admin` dashboard | Yes (for admin features) |
 | `SENDGRID_API_KEY` | SendGrid API key (must have verified sender for `contact@americanseekersacademy.com`) | Yes (for any emails to be sent) |
 | `HUBSPOT_API` | HubSpot Private App token (starts with `pat-`) — used only for CRM contact upsert | Optional |
+| `TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key. Public. Returned to the browser only when the secret is also set. | Optional |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret key. Verified on the server for contact, waitlist, and location posts. | Optional |
+| `SPAM_DOMAIN_BLOCKLIST` | Extra comma-separated email domains to reject. `rootsec.nl` is always blocked. | Optional |
+| `FORM_RATE_LIMIT` | Posts allowed per IP and per email on the lead forms. Default 5. | Optional |
+| `FORM_RATE_WINDOW_MINUTES` | Window for that cap. Default 60. | Optional |
+| `FORM_MIN_FILL_MS` | Minimum time a form must stay open before a real save. Default 3000. Faster posts get HTTP 200 and are not saved. | Optional |
 
 #### Email Flows (All via SendGrid)
 
@@ -229,6 +236,21 @@ The public `POST /api/analytics/pageview` endpoint (used by `AnalyticsTracker.ts
   - `ANALYTICS_RATE_WINDOW_MINUTES`
 
 This provides basic protection against bots and abuse without affecting normal visitors.
+
+### Form spam protection
+
+Contact (`POST /api/contact-inquiry`), registration waitlist (`POST /api/registration-waitlist`), and location suggestions (`POST /api/location-suggestions`) share one gate in `server/formProtection.ts`:
+
+- A hidden honeypot (`asa_hp`) and a minimum fill time. Those failures return HTTP 200 and are not stored or emailed, so bots are not told the check failed.
+- Cloudflare Turnstile, checked at `https://challenges.cloudflare.com/turnstile/v0/siteverify`. If `TURNSTILE_SITE_KEY` or `TURNSTILE_SECRET_KEY` is missing, verification is skipped and a warning is logged. Get both keys from the Cloudflare dashboard: Turnstile → Add widget → hostnames `americanseekersacademy.com` (and any dev host) → Managed mode → copy the site key and the secret key.
+- Server-side checks for name length and characters, all-digit or gibberish messages, waitlist campuses (`brighton`, `greece`, `victor`, `batavia`, `angelica`), and an email-domain blocklist.
+- 5 submissions per hour per IP and per email (HTTP 429). `trust proxy` is set so the visitor IP is used behind the platform proxy.
+
+Spam already in the database is not deleted. `migrations/0002_add_spam_flags.sql` adds `is_spam` (default false) and `spam_reason` to `contact_inquiries`, `registration_waitlist`, and `location_suggestions`. Apply that file in the Neon SQL editor before deploying this code. Do not run `npm run db:push` against production.
+
+`scripts/flag-existing-form-spam.sql` is a read-only preview of rows that match the junk patterns (random names, all-digit notes, `rootsec.nl`, dotted mailbox names, gibberish cities). It does not run on deploy. Real entries such as Kylee H. (Yankee Doodle), Brianne, jaimie metz, and Alyson Valenti are excluded by those patterns. The UPDATE block at the bottom of that file is commented out until the preview count looks right.
+
+Admin lists and CSV exports hide `is_spam` rows until Show spam is turned on. Each row can be marked or unmarked. The daily contacts export skips spam.
 
 ### Admin Security
 

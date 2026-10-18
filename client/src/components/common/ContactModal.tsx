@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import FormSpamFields, { useFormSpamFields } from "@/components/common/FormSpamFields";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -30,6 +31,7 @@ interface ContactModalProps {
 export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
+  const spam = useFormSpamFields(isOpen);
 
   const form = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
@@ -43,7 +45,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: ContactForm) => {
+    mutationFn: async (data: ContactForm & { asa_hp: string; formStartedAt: number; turnstileToken?: string }) => {
       const response = await apiRequest("POST", "/api/contact-inquiry", data);
       return response.json();
     },
@@ -60,7 +62,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   });
 
   const onSubmit = (data: ContactForm) => {
-    mutation.mutate(data);
+    mutation.mutate({ ...data, ...spam.payload() });
   };
 
   const handleClose = () => {
@@ -104,7 +106,14 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               Have a question or want to learn more about American Seekers Academy? We'd love to hear from you!
             </p>
 
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="relative space-y-4">
+              <FormSpamFields
+                key={spam.widgetKey}
+                honeypot={spam.honeypot}
+                onHoneypot={spam.setHoneypot}
+                siteKey={spam.siteKey}
+                onToken={spam.setTurnstileToken}
+              />
               <div>
                 <Label htmlFor="contact-name" className="flex items-center gap-2 mb-2">
                   <User className="h-4 w-4" />
@@ -182,7 +191,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || spam.pendingToken}
                 data-testid="contact-submit-btn"
               >
                 {mutation.isPending ? (

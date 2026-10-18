@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download } from "lucide-react";
+import { Lock, LayoutDashboard, Users, MapPin, GraduationCap, Mail, BarChart3, LogOut, Eye, FileText, Megaphone, Pin, Trash2, Globe, EyeOff, Pencil, X, Check, ShieldCheck, AlertTriangle, Send, CheckCircle2, XCircle, ClipboardList, Download, ShieldAlert } from "lucide-react";
 import { SiFacebook, SiGoogle } from "react-icons/si";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -125,6 +125,10 @@ function downloadCsv(url: string, filename: string, getAuthHeaders: () => Header
 function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
   const [selectedInquiry, setSelectedInquiry] = useState<ContactInquiry | null>(null);
   const [contactSearch, setContactSearch] = useState("");
+  const [showContactSpam, setShowContactSpam] = useState(false);
+  const [showLocationSpam, setShowLocationSpam] = useState(false);
+  const [showWaitlistSpam, setShowWaitlistSpam] = useState(false);
+  const { toast } = useToast();
 
   const handleUnauthorized = (res: Response) => {
     if (res.status === 401) {
@@ -145,19 +149,19 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
     retry: false,
   });
 
-  const contactsQuery = useQuery<{ success: boolean; inquiries: ContactInquiry[] }>({
-    queryKey: ["/api/admin/contacts"],
+  const contactsQuery = useQuery<{ success: boolean; inquiries: ContactInquiry[]; hiddenSpamCount: number }>({
+    queryKey: ["/api/admin/contacts", showContactSpam],
     queryFn: async () => {
-      const res = await fetch("/api/admin/contacts", { headers: getAuthHeaders() });
+      const res = await fetch(`/api/admin/contacts${showContactSpam ? "?includeSpam=1" : ""}`, { headers: getAuthHeaders() });
       return handleUnauthorized(res);
     },
     retry: false,
   });
 
-  const locationsQuery = useQuery<{ success: boolean; suggestions: LocationSuggestion[] }>({
-    queryKey: ["/api/admin/locations"],
+  const locationsQuery = useQuery<{ success: boolean; suggestions: LocationSuggestion[]; hiddenSpamCount: number }>({
+    queryKey: ["/api/admin/locations", showLocationSpam],
     queryFn: async () => {
-      const res = await fetch("/api/admin/locations", { headers: getAuthHeaders() });
+      const res = await fetch(`/api/admin/locations${showLocationSpam ? "?includeSpam=1" : ""}`, { headers: getAuthHeaders() });
       return handleUnauthorized(res);
     },
     retry: false,
@@ -190,13 +194,35 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
     retry: false,
   });
 
-  const waitlistQuery = useQuery<{ success: boolean; entries: RegistrationWaitlistEntry[] }>({
-    queryKey: ["/api/admin/registration-waitlist"],
+  const waitlistQuery = useQuery<{ success: boolean; entries: RegistrationWaitlistEntry[]; hiddenSpamCount: number }>({
+    queryKey: ["/api/admin/registration-waitlist", showWaitlistSpam],
     queryFn: async () => {
-      const res = await fetch("/api/admin/registration-waitlist", { headers: getAuthHeaders() });
+      const res = await fetch(`/api/admin/registration-waitlist${showWaitlistSpam ? "?includeSpam=1" : ""}`, { headers: getAuthHeaders() });
       return handleUnauthorized(res);
     },
     retry: false,
+  });
+
+  const spamMutation = useMutation({
+    mutationFn: async ({ kind, id, isSpam }: { kind: "contacts" | "locations" | "registration-waitlist"; id: number; isSpam: boolean }) => {
+      const headers = new Headers(getAuthHeaders());
+      headers.set("Content-Type", "application/json");
+      const res = await fetch(`/api/admin/${kind}/${id}/spam`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ isSpam }),
+      });
+      return handleUnauthorized(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/locations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/registration-waitlist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not update that row", description: error.message, variant: "destructive" });
+    },
   });
 
   const stats = statsQuery.data?.stats;
@@ -323,7 +349,18 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                       onChange={(e) => setContactSearch(e.target.value)}
                       className="w-64"
                     />
-                    <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/contacts/export.csv", "contacts.csv", getAuthHeaders)}>
+                    <Button
+                      type="button"
+                      variant={showContactSpam ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={showContactSpam}
+                      data-testid="toggle-spam-contacts"
+                      onClick={() => setShowContactSpam((current) => !current)}
+                    >
+                      <ShieldAlert className="w-4 h-4 mr-1" />
+                      {showContactSpam ? "Hide spam" : `Show spam${contactsQuery.data?.hiddenSpamCount ? ` (${contactsQuery.data.hiddenSpamCount})` : ""}`}
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv(`/api/admin/contacts/export.csv${showContactSpam ? "?includeSpam=1" : ""}`, "contacts.csv", getAuthHeaders)}>
                       <Download className="w-4 h-4" /> Export CSV
                     </Button>
                   </div>
@@ -332,8 +369,14 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
               <CardContent>
                 {contactsQuery.isLoading ? (
                   <Skeleton className="h-32 w-full" />
+                ) : contactsQuery.isError ? (
+                  <p className="text-destructive text-center py-8">Could not load contact inquiries.</p>
                 ) : (contactsQuery.data?.inquiries?.length ?? 0) === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No contact inquiries yet.</p>
+                  <p className="text-gray-500 text-center py-8">
+                    {(contactsQuery.data?.hiddenSpamCount ?? 0) > 0
+                      ? "Spam is hidden. Use Show spam to review those messages."
+                      : "No contact inquiries yet."}
+                  </p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -344,6 +387,7 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                         <TableHead>No Phone Contact</TableHead>
                         <TableHead>Message</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead>Spam</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -363,12 +407,32 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                             onClick={() => setSelectedInquiry(inquiry)}
                             className="cursor-pointer hover:bg-gray-50 transition-colors"
                           >
-                            <TableCell className="font-medium">{inquiry.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {inquiry.name}
+                                {inquiry.isSpam ? <Badge variant="outline">Spam</Badge> : null}
+                              </div>
+                            </TableCell>
                             <TableCell>{inquiry.email}</TableCell>
                             <TableCell>{inquiry.phone}</TableCell>
                             <TableCell>{inquiry.phoneOptOut ? <Badge variant="secondary">Opted Out</Badge> : <span className="text-gray-400">—</span>}</TableCell>
                             <TableCell className="max-w-xs truncate">{inquiry.message}</TableCell>
                             <TableCell>{formatDate(inquiry.createdAt)}</TableCell>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                aria-label={inquiry.isSpam ? `Mark ${inquiry.name} as not spam` : `Mark ${inquiry.name} as spam`}
+                                data-testid={`spam-toggle-contact-${inquiry.id}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  spamMutation.mutate({ kind: "contacts", id: inquiry.id, isSpam: !inquiry.isSpam });
+                                }}
+                              >
+                                {inquiry.isSpam ? "Not spam" : "Mark spam"}
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                     </TableBody>
@@ -448,16 +512,35 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                     <MapPin className="w-5 h-5" />
                     Location Suggestions
                   </CardTitle>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv("/api/admin/locations/export.csv", "location-suggestions.csv", getAuthHeaders)}>
-                    <Download className="w-4 h-4" /> Export CSV
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={showLocationSpam ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={showLocationSpam}
+                      data-testid="toggle-spam-locations"
+                      onClick={() => setShowLocationSpam((current) => !current)}
+                    >
+                      <ShieldAlert className="w-4 h-4 mr-1" />
+                      {showLocationSpam ? "Hide spam" : `Show spam${locationsQuery.data?.hiddenSpamCount ? ` (${locationsQuery.data.hiddenSpamCount})` : ""}`}
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => downloadCsv(`/api/admin/locations/export.csv${showLocationSpam ? "?includeSpam=1" : ""}`, "location-suggestions.csv", getAuthHeaders)}>
+                      <Download className="w-4 h-4" /> Export CSV
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {locationsQuery.isLoading ? (
                   <Skeleton className="h-32 w-full" />
+                ) : locationsQuery.isError ? (
+                  <p className="text-destructive text-center py-8">Could not load location suggestions.</p>
                 ) : (locationsQuery.data?.suggestions?.length ?? 0) === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No location suggestions yet.</p>
+                  <p className="text-gray-500 text-center py-8">
+                    {(locationsQuery.data?.hiddenSpamCount ?? 0) > 0
+                      ? "Spam is hidden. Use Show spam to review those suggestions."
+                      : "No location suggestions yet."}
+                  </p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -467,16 +550,34 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                         <TableHead>Suggested Location</TableHead>
                         <TableHead>Comments</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead>Spam</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {locationsQuery.data?.suggestions?.map((suggestion) => (
                         <TableRow key={suggestion.id} data-testid={`location-row-${suggestion.id}`}>
-                          <TableCell className="font-medium">{suggestion.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {suggestion.name}
+                              {suggestion.isSpam ? <Badge variant="outline">Spam</Badge> : null}
+                            </div>
+                          </TableCell>
                           <TableCell>{suggestion.email}</TableCell>
                           <TableCell>{suggestion.location}</TableCell>
                           <TableCell className="max-w-xs truncate">{suggestion.comments || "-"}</TableCell>
                           <TableCell>{formatDate(suggestion.createdAt)}</TableCell>
+                          <TableCell>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              aria-label={suggestion.isSpam ? `Mark ${suggestion.name} as not spam` : `Mark ${suggestion.name} as spam`}
+                              data-testid={`spam-toggle-location-${suggestion.id}`}
+                              onClick={() => spamMutation.mutate({ kind: "locations", id: suggestion.id, isSpam: !suggestion.isSpam })}
+                            >
+                              {suggestion.isSpam ? "Not spam" : "Mark spam"}
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -658,40 +759,47 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                     <ClipboardList className="w-5 h-5" />
                     Fall 2026 Registration Waitlist
                   </CardTitle>
-                  <a
-                    href={`/api/admin/registration-waitlist/export.csv?token=${localStorage.getItem("admin_token")}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const token = localStorage.getItem("admin_token");
-                      fetch("/api/admin/registration-waitlist/export.csv", {
-                        headers: { Authorization: `Bearer ${token}` },
-                      })
-                        .then(r => r.blob())
-                        .then(blob => {
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = "registration-waitlist.csv";
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        });
-                    }}
-                  >
-                    <Button variant="outline" className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={showWaitlistSpam ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={showWaitlistSpam}
+                      data-testid="toggle-spam-waitlist"
+                      onClick={() => setShowWaitlistSpam((current) => !current)}
+                    >
+                      <ShieldAlert className="w-4 h-4 mr-1" />
+                      {showWaitlistSpam ? "Hide spam" : `Show spam${waitlistQuery.data?.hiddenSpamCount ? ` (${waitlistQuery.data.hiddenSpamCount})` : ""}`}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={() => downloadCsv(`/api/admin/registration-waitlist/export.csv${showWaitlistSpam ? "?includeSpam=1" : ""}`, "registration-waitlist.csv", getAuthHeaders)}
+                    >
                       <Download className="w-4 h-4" />
                       Export CSV
                     </Button>
-                  </a>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   {waitlistQuery.data?.entries.length ?? 0} families on the waitlist
+                  {(waitlistQuery.data?.hiddenSpamCount ?? 0) > 0 && !showWaitlistSpam
+                    ? ` (${waitlistQuery.data?.hiddenSpamCount} spam hidden)`
+                    : ""}
                 </p>
               </CardHeader>
               <CardContent>
                 {waitlistQuery.isLoading ? (
                   <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+                ) : waitlistQuery.isError ? (
+                  <p className="text-destructive text-sm py-4 text-center">Could not load the waitlist.</p>
                 ) : !waitlistQuery.data?.entries.length ? (
-                  <p className="text-gray-500 text-sm py-4 text-center">No waitlist entries yet.</p>
+                  <p className="text-gray-500 text-sm py-4 text-center">
+                    {(waitlistQuery.data?.hiddenSpamCount ?? 0) > 0
+                      ? "Spam is hidden. Use Show spam to review those entries."
+                      : "No waitlist entries yet."}
+                  </p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -702,12 +810,18 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                         <TableHead>Program Interest</TableHead>
                         <TableHead>Location Interest</TableHead>
                         <TableHead>Signed Up</TableHead>
+                        <TableHead>Spam</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {waitlistQuery.data.entries.map((entry) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {entry.name}
+                              {entry.isSpam ? <Badge variant="outline">Spam</Badge> : null}
+                            </div>
+                          </TableCell>
                           <TableCell>{entry.email}</TableCell>
                           <TableCell>{entry.phone || "—"}</TableCell>
                           <TableCell>
@@ -722,6 +836,18 @@ function AuthenticatedDashboard({ onLogout }: { onLogout: () => void }) {
                           </TableCell>
                           <TableCell className="text-gray-500 text-sm">
                             {formatDate(entry.createdAt, { month: "short", day: "numeric", year: "numeric" })}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              aria-label={entry.isSpam ? `Mark ${entry.name} as not spam` : `Mark ${entry.name} as spam`}
+                              data-testid={`spam-toggle-waitlist-${entry.id}`}
+                              onClick={() => spamMutation.mutate({ kind: "registration-waitlist", id: entry.id, isSpam: !entry.isSpam })}
+                            >
+                              {entry.isSpam ? "Not spam" : "Mark spam"}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

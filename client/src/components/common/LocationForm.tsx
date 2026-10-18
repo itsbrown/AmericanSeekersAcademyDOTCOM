@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { insertLocationSuggestionSchema } from '@shared/schema';
+import FormSpamFields, { useFormSpamFields } from '@/components/common/FormSpamFields';
 
 const validationSchema = insertLocationSuggestionSchema.extend({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -17,6 +18,7 @@ type FormValues = z.infer<typeof validationSchema>;
 const LocationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const spam = useFormSpamFields();
   
   const {
     register,
@@ -36,7 +38,7 @@ const LocationForm = () => {
   const onSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true);
-      const response = await apiRequest('POST', '/api/location-suggestions', data);
+      const response = await apiRequest('POST', '/api/location-suggestions', { ...data, ...spam.payload() });
       
       if (response.ok) {
         toast({
@@ -60,7 +62,14 @@ const LocationForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} className="relative">
+      <FormSpamFields
+        key={spam.widgetKey}
+        honeypot={spam.honeypot}
+        onHoneypot={spam.setHoneypot}
+        siteKey={spam.siteKey}
+        onToken={spam.setTurnstileToken}
+      />
       <div className="mb-4">
         <label className="block text-neutral-700 text-sm font-medium mb-2" htmlFor="name">
           Your Name
@@ -140,7 +149,7 @@ const LocationForm = () => {
         <button 
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70"
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || spam.pendingToken}
         >
           {isSubmitting ? 'Submitting...' : 'Submit Suggestion'}
         </button>

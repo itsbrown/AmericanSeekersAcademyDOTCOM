@@ -30,6 +30,8 @@ export const locationSuggestions = pgTable("location_suggestions", {
   email: text("email").notNull(),
   location: text("location").notNull(),
   comments: text("comments"),
+  isSpam: boolean("is_spam").notNull().default(false),
+  spamReason: text("spam_reason"),
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -87,6 +89,8 @@ export const contactInquiries = pgTable("contact_inquiries", {
   phone: text("phone").notNull(),
   message: text("message").notNull(),
   phoneOptOut: boolean("phone_opt_out").notNull().default(false),
+  isSpam: boolean("is_spam").notNull().default(false),
+  spamReason: text("spam_reason"),
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -214,6 +218,8 @@ export const registrationWaitlist = pgTable("registration_waitlist", {
   phone: text("phone"),
   programInterest: text("program_interest"),
   locationInterest: text("location_interest"), // New field for location-specific waitlists
+  isSpam: boolean("is_spam").notNull().default(false),
+  spamReason: text("spam_reason"),
   // Migrated to proper timestamp
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -221,6 +227,8 @@ export const registrationWaitlist = pgTable("registration_waitlist", {
 export const insertRegistrationWaitlistSchema = createInsertSchema(registrationWaitlist).omit({
   id: true,
   createdAt: true,
+  isSpam: true,
+  spamReason: true,
 }).extend({
   phone: z.string().optional(),
   programInterest: z.string().optional(),

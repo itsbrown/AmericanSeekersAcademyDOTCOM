@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2 } from "lucide-react";
+import FormSpamFields, { useFormSpamFields } from "@/components/common/FormSpamFields";
 
 const waitlistSchema = z.object({
   name: z.string().min(2, "Please enter your name"),
@@ -37,6 +38,7 @@ interface WaitlistFormProps {
 export default function WaitlistForm({ defaultLocation, compact = false }: WaitlistFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
+  const spam = useFormSpamFields();
 
   const form = useForm<WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
@@ -51,7 +53,7 @@ export default function WaitlistForm({ defaultLocation, compact = false }: Waitl
 
   const onSubmit = async (data: WaitlistFormData) => {
     try {
-      await apiRequest("POST", "/api/registration-waitlist", data);
+      await apiRequest("POST", "/api/registration-waitlist", { ...data, ...spam.payload() });
       setSubmitted(true);
     } catch {
       toast({ title: "Something went wrong. Please try again.", variant: "destructive" });
@@ -72,7 +74,14 @@ export default function WaitlistForm({ defaultLocation, compact = false }: Waitl
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="relative space-y-4">
+        <FormSpamFields
+          key={spam.widgetKey}
+          honeypot={spam.honeypot}
+          onHoneypot={spam.setHoneypot}
+          siteKey={spam.siteKey}
+          onToken={spam.setTurnstileToken}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -171,7 +180,7 @@ export default function WaitlistForm({ defaultLocation, compact = false }: Waitl
           />
         )}
 
-        <Button type="submit" className="w-full btn-primary" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full btn-primary" disabled={form.formState.isSubmitting || spam.pendingToken}>
           {form.formState.isSubmitting ? "Joining..." : "Join the Waitlist"}
         </Button>
 
