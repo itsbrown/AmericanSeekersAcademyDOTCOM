@@ -22,28 +22,51 @@ function readyBody(extra: Record<string, unknown> = {}) {
 
 const realRows: StoredSpamRow[] = [
   {
-    name: "Kylee H.",
-    email: "kylee.h@example.com",
+    name: "Sam Q. Sample",
+    email: "sam.q.sample@example.com",
     programInterest: "Yankee Doodle",
     locationInterest: "greece",
   },
   {
-    name: "Brianne",
-    email: "briannelynk@yahoo.com",
+    name: "Pat Example",
+    email: "pat.example@example.com",
     location: "Brockport, NY",
     comments: "",
   },
   {
-    name: "jaimie metz",
-    email: "Jmetz4711@gmail.com",
+    name: "jamie example",
+    email: "jamie.example@example.com",
     location: "orleans county",
     comments: "brockport, holley, kent, kendall",
   },
   {
-    name: "Alyson Valenti",
-    email: "acragle1@gmail.com",
+    name: "Alex Example",
+    email: "alex.example@example.com",
     location: "Victor, NY",
     comments: "We are very interested in your program for our girls and would love to learn more.",
+  },
+  {
+    name: "Lynn",
+    email: "lynn.sample@example.com",
+    location: "Churchville",
+    comments: "Lynn",
+  },
+  {
+    name: "Krzysztof",
+    email: "j.r.r.tolkien@example.com",
+    location: "Lyndonville",
+    comments: "Strzelecki",
+  },
+  {
+    name: "Nguyễn Văn An",
+    email: "nguyen.sample@example.com",
+    location: "Clyde",
+    comments: "Schwarzkopf",
+  },
+  {
+    name: "Олег",
+    email: "oleg.sample@example.com",
+    location: "Churchville, NY",
   },
 ];
 
@@ -68,13 +91,13 @@ const spamRows: StoredSpamRow[] = [
   },
   {
     name: "vCpHXmOvrnrqGBae",
-    email: "jswerdon@comcast.net",
+    email: "bot-four@example.com",
     location: "Mngrp",
     comments: "5441462939",
   },
   {
     name: "KMLIzIXosMXbTAMXQRsArjMc",
-    email: "wazo@aol.com",
+    email: "bot-five@example.com",
     location: "Pegswlgdv",
     comments: "96036244433",
   },
@@ -84,14 +107,11 @@ const junkCities = [
   "Dzotw",
   "Fltxbzc",
   "Ynsupe",
-  "Ipocgntfl",
   "Mngrp",
   "Zviugqh",
   "Jlhvbelkh",
-  "Weqrxl",
   "Dbrlgk",
   "Tbzkzy",
-  "Fulorz",
   "Pegswlgdv",
 ];
 
@@ -113,9 +133,13 @@ const realPlaces = [
   "Hilton",
   "Irondequoit",
   "Orleans County",
+  "Churchville",
+  "Lyndonville",
+  "Clyde",
+  "Churchville, NY",
 ];
 
-test("preview count ignores real families and counts junk rows", () => {
+test("preview count ignores ordinary rows and counts junk rows", () => {
   for (const row of realRows) {
     assert.deepEqual(storedRowSpamReasons(row), [], row.name);
   }
@@ -145,8 +169,8 @@ test("place names from real suggestions are kept and junk cities are flagged", (
 
 test("honeypot and fast fills are silent successes", () => {
   const base = {
-    name: "Brianne",
-    email: "briannelynk@yahoo.com",
+    name: "Pat Example",
+    email: "pat.example@example.com",
     location: "Brockport, NY",
   };
   const honeypot = guardFormSubmission({
@@ -171,62 +195,92 @@ test("honeypot and fast fills are silent successes", () => {
   assert.equal(missingTimer.action, "silent");
 });
 
-test("real location suggestions and Kylee's waitlist entry are accepted", () => {
-  const brianne = guardFormSubmission({
+test("ordinary location suggestions and a waitlist entry are accepted", () => {
+  const town = guardFormSubmission({
     kind: "location",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
-      email: "briannelynk@yahoo.com",
+      name: "Pat Example",
+      email: "pat.example@example.com",
       location: "Brockport, NY",
       comments: "",
     }),
   });
-  assert.equal(brianne.action, "allow");
-  if (brianne.action === "allow" && brianne.kind === "location") {
-    assert.equal(brianne.data.location, "Brockport, NY");
-    assert.equal(brianne.data.comments, undefined);
+  assert.equal(town.action, "allow");
+  if (town.action === "allow" && town.kind === "location") {
+    assert.equal(town.data.location, "Brockport, NY");
+    assert.equal(town.data.comments, undefined);
   }
 
-  const jaimie = guardFormSubmission({
+  const county = guardFormSubmission({
     kind: "location",
     now: NOW,
     body: readyBody({
-      name: "jaimie metz",
-      email: "Jmetz4711@gmail.com",
+      name: "jamie example",
+      email: "jamie.example@example.com",
       location: "orleans county",
       comments: "brockport, holley, kent, kendall",
     }),
   });
-  assert.equal(jaimie.action, "allow");
+  assert.equal(county.action, "allow");
 
-  const alyson = guardFormSubmission({
+  const sentence = guardFormSubmission({
     kind: "location",
     now: NOW,
     body: readyBody({
-      name: "Alyson Valenti",
-      email: "acragle1@gmail.com",
+      name: "Alex Example",
+      email: "alex.example@example.com",
       location: "Victor, NY",
       comments: "We are very interested in your program for our girls and would love to learn more.",
     }),
   });
-  assert.equal(alyson.action, "allow");
+  assert.equal(sentence.action, "allow");
 
-  const kylee = guardFormSubmission({
+  const waitlist = guardFormSubmission({
     kind: "waitlist",
     now: NOW,
     body: readyBody({
-      name: "Kylee H.",
-      email: "kylee.h@example.com",
+      name: "Sam Q. Sample",
+      email: "sam.q.sample@example.com",
       phone: "(585) 555-0100",
       programInterest: "Yankee Doodle",
       locationInterest: "Greece",
     }),
   });
-  assert.equal(kylee.action, "allow");
-  if (kylee.action === "allow" && kylee.kind === "waitlist") {
-    assert.equal(kylee.data.programInterest, "yankee-doodle");
-    assert.equal(kylee.data.locationInterest, "greece");
+  assert.equal(waitlist.action, "allow");
+  if (waitlist.action === "allow" && waitlist.kind === "waitlist") {
+    assert.equal(waitlist.data.programInterest, "yankee-doodle");
+    assert.equal(waitlist.data.locationInterest, "greece");
+  }
+});
+
+test("real towns, surnames, unicode names, and three-dot emails are accepted", () => {
+  const names = ["Lynn", "Bryn", "Wynn", "Glynn", "Krzysztof", "Strzelecki", "Schwarzkopf", "Tschirhart", "Nguyễn Văn An", "Олег", "Mary-Jane O'Neil", "José García"];
+  for (const name of names) {
+    const decision = guardFormSubmission({
+      kind: "waitlist",
+      now: NOW,
+      body: readyBody({
+        name,
+        email: "j.r.r.tolkien@example.com",
+        locationInterest: "victor",
+      }),
+    });
+    assert.equal(decision.action, "allow", name);
+  }
+
+  for (const location of ["Churchville", "Lyndonville", "Clyde", "Churchville, NY"]) {
+    const decision = guardFormSubmission({
+      kind: "location",
+      now: NOW,
+      body: readyBody({
+        name: "Pat Example",
+        email: "pat.example@example.com",
+        location,
+        comments: location === "Clyde" ? "Strzelecki" : "Lynn",
+      }),
+    });
+    assert.equal(decision.action, "allow", location);
   }
 });
 
@@ -247,8 +301,8 @@ test("server validation rejects the bot patterns", () => {
     kind: "contact",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
-      email: "briannelynk@yahoo.com",
+      name: "Pat Example",
+      email: "pat.example@example.com",
       phone: "5855550100",
       message: "6654270955",
     }),
@@ -259,7 +313,7 @@ test("server validation rejects the bot patterns", () => {
     kind: "contact",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
+      name: "Pat Example",
       email: "admin@rootsec.nl",
       phone: "5855550100",
       message: "We would like to know more about the Greece campus.",
@@ -271,7 +325,7 @@ test("server validation rejects the bot patterns", () => {
     kind: "waitlist",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
+      name: "Pat Example",
       email: "a.higitoz.a.j.752@gmail.com",
       locationInterest: "brighton",
     }),
@@ -282,8 +336,8 @@ test("server validation rejects the bot patterns", () => {
     kind: "waitlist",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
-      email: "briannelynk@yahoo.com",
+      name: "Pat Example",
+      email: "pat.example@example.com",
       locationInterest: "Dzotw",
     }),
   });
@@ -293,8 +347,8 @@ test("server validation rejects the bot patterns", () => {
     kind: "location",
     now: NOW,
     body: readyBody({
-      name: "Brianne",
-      email: "briannelynk@yahoo.com",
+      name: "Pat Example",
+      email: "pat.example@example.com",
       location: "Fltxbzc",
       comments: "Looking for a campus nearby.",
     }),
@@ -306,7 +360,7 @@ test("server validation rejects the bot patterns", () => {
     now: NOW,
     blockedDomains: ["mailinator.com"],
     body: readyBody({
-      name: "Brianne",
+      name: "Pat Example",
       email: "person@mailinator.com",
       phone: "5855550100",
       message: "We would like to know more about the Greece campus.",

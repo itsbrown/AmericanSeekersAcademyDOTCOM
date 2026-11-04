@@ -248,7 +248,7 @@ Contact (`POST /api/contact-inquiry`), registration waitlist (`POST /api/registr
 
 Spam already in the database is not deleted. `migrations/0002_add_spam_flags.sql` adds `is_spam` (default false) and `spam_reason` to `contact_inquiries`, `registration_waitlist`, and `location_suggestions`. Apply that file in the Neon SQL editor before deploying this code. Do not run `npm run db:push` against production.
 
-`scripts/flag-existing-form-spam.sql` is a read-only preview of rows that match the junk patterns (random names, all-digit notes, `rootsec.nl`, dotted mailbox names, gibberish cities). It does not run on deploy. Real entries such as Kylee H. (Yankee Doodle), Brianne, jaimie metz, and Alyson Valenti are excluded by those patterns. The UPDATE block at the bottom of that file is commented out until the preview count looks right.
+`scripts/flag-existing-form-spam.sql` is a read-only preview of rows that match the junk patterns (random single-token names, all-digit notes, `rootsec.nl`, mailbox names with 4 or more dots, and gibberish cities). `y` counts as a vowel, and a 4-consonant run is not enough to flag a town or a surname, so values such as Churchville, Clyde, Lynn, and Krzysztof stay out. It does not run on deploy. `real_names_flagged` on the preview must be 0. The UPDATE block at the bottom of that file is commented out until the preview count looks right.
 
 Admin lists and CSV exports hide `is_spam` rows until Show spam is turned on. Each row can be marked or unmarked. The daily contacts export skips spam.
 

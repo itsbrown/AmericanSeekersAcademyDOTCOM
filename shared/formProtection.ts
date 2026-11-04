@@ -20,9 +20,8 @@ export const PROGRAM_SLUGS = ["macaronis", "yankee-doodle", "tycoons", "seekers"
 export const DEFAULT_BLOCKED_EMAIL_DOMAINS = ["rootsec.nl"] as const;
 
 const RARE_START = /^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)/;
-const UNCOMMON_BIGRAM = /(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)/;
-const NAME_PATTERN = /^[A-Za-z\u00C0-\u024F][A-Za-z\u00C0-\u024F .'’\-]*$/;
-const PLACE_CHARACTERS = /^[A-Za-z\u00C0-\u024F0-9\s,.'’\-()/]+$/;
+const NAME_PUNCTUATION = " .'’-";
+const PLACE_PUNCTUATION = " ,.'’()-/";
 
 export type FormKind = "contact" | "waitlist" | "location";
 
@@ -94,9 +93,28 @@ export function localPartDotCount(email: string): number {
   return (local.match(/\./g) || []).length;
 }
 
-/** Gmail-style dotted locals used by the bot wave (3 or more dots). */
+/**
+ * Bot mailbox names from the Aug 2026 wave use 4 or more dots
+ * (a.higitoz.a.j.752@gmail.com). Three dots, as in j.r.r.tolkien@example.com, stay allowed.
+ */
 export function isDottedSpamEmail(email: string): boolean {
-  return localPartDotCount(email) >= 3;
+  return localPartDotCount(email) >= 4;
+}
+
+function isCasedLetter(char: string): boolean {
+  return char.toLowerCase() !== char.toUpperCase();
+}
+
+function isAllowedName(value: string): boolean {
+  const chars = Array.from(value);
+  if (chars.length === 0 || !isCasedLetter(chars[0])) return false;
+  return chars.every((char, index) => isCasedLetter(char) || (index > 0 && NAME_PUNCTUATION.includes(char)));
+}
+
+function isAllowedPlace(value: string): boolean {
+  const chars = Array.from(value);
+  if (chars.length === 0) return false;
+  return chars.every((char) => isCasedLetter(char) || /[0-9]/.test(char) || PLACE_PUNCTUATION.includes(char));
 }
 
 export function isAllDigitPayload(value: string): boolean {
@@ -107,11 +125,15 @@ export function isAllDigitPayload(value: string): boolean {
 export function isGibberishToken(raw: string): boolean {
   const word = raw.toLowerCase().replace(/[^a-z]/g, "");
   if (word.length < 4 || word.length > 40) return false;
-  if (!/[aeiou]/.test(word)) return true;
-  const collapsed = word.replace(/([a-z])\1+/g, "$1");
-  if (/[bcdfghjklmnpqrstvwxyz]{4,}/.test(collapsed)) return true;
+  // y counts as a vowel so Lynn, Bryn, Clyde, and Lyndonville are names and towns.
+  if (!/[aeiouy]/.test(word)) return true;
   if (RARE_START.test(word)) return true;
-  if (UNCOMMON_BIGRAM.test(word)) return true;
+  // Runs of 4 show up in real words (Churchville, Schwarzkopf, Tschirhart, Strzelecki).
+  // Only a run of 5 or more, and only on a longer token, counts as junk.
+  if (word.length >= 8) {
+    const collapsed = word.replace(/([a-z])\1+/g, "$1");
+    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(collapsed)) return true;
+  }
   return false;
 }
 
@@ -131,15 +153,17 @@ export function isRandomSpamName(name: string): boolean {
   if (!trimmed) return false;
   if (/[0-9]/.test(trimmed)) return true;
   if (/\s/.test(trimmed)) return false;
-  const letters = trimmed.replace(/[^A-Za-z]/g, "");
-  if (letters.length >= 16) return true;
-  if (letters.length >= 5 && !/[aeiouy]/i.test(letters)) return true;
-  if (letters.length >= 8) {
-    const upper = (trimmed.match(/[A-Z]/g) || []).length;
-    const lower = (trimmed.match(/[a-z]/g) || []).length;
+  const letters = Array.from(trimmed).filter(isCasedLetter).join("");
+  const latin = letters.replace(/[^A-Za-z]/g, "");
+  // Cyrillic, Vietnamese, and other non-Latin names are not the latin junk pattern.
+  if (latin.length !== letters.length) return letters.length >= 16;
+  if (latin.length >= 16) return true;
+  if (latin.length >= 5 && !/[aeiouy]/i.test(latin)) return true;
+  if (latin.length >= 8) {
+    const upper = (latin.match(/[A-Z]/g) || []).length;
+    const lower = (latin.match(/[a-z]/g) || []).length;
     if (upper >= 4 && lower >= 4) return true;
   }
-  if (isGibberishToken(trimmed)) return true;
   return false;
 }
 
@@ -208,7 +232,7 @@ function personNameError(name: unknown): string | null {
   if (typeof name !== "string") return "Please enter your name.";
   const trimmed = name.trim();
   if (trimmed.length < 2 || trimmed.length > 80) return "Please enter your name.";
-  if (!NAME_PATTERN.test(trimmed) || isRandomSpamName(trimmed)) {
+  if (!isAllowedName(trimmed) || isRandomSpamName(trimmed)) {
     return "Please enter your name using letters, spaces, hyphens, or apostrophes.";
   }
   return null;
@@ -266,7 +290,7 @@ function suggestedLocationError(location: unknown): string | null {
   if (typeof location !== "string") return "Please enter a location.";
   const trimmed = location.trim();
   if (trimmed.length < 2 || trimmed.length > 120) return "Please enter a location.";
-  if (!PLACE_CHARACTERS.test(trimmed) || isAllDigitPayload(trimmed) || isGibberishPlace(trimmed)) {
+  if (!isAllowedPlace(trimmed) || isAllDigitPayload(trimmed) || isGibberishPlace(trimmed)) {
     return "Please enter a city or area.";
   }
   return null;
@@ -365,8 +389,8 @@ export function guardFormSubmission(input: {
 
 /**
  * Reasons a stored row would be counted by the one-time spam preview.
- * A row is flagged when this list is non-empty. Real submissions such as
- * Kylee H. (Yankee Doodle), Brianne, jaimie metz, and Alyson Valenti return [].
+ * A row is flagged when this list is non-empty. Ordinary names, Unicode names,
+ * and real town names return [].
  */
 export function storedRowSpamReasons(row: StoredSpamRow, extraDomains: string[] = []): string[] {
   const reasons: string[] = [];

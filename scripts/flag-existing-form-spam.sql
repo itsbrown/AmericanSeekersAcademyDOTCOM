@@ -17,9 +17,10 @@
 -- Count logic (a row adds 1 to its source when the reason list is non-empty):
 --   random-name
 --     Name contains a digit, OR it is a single token (no spaces) that is
---     16+ letters, OR 5+ letters with no vowel, OR 8+ letters with 4 uppercase
---     and 4 lowercase, OR a gibberish token (Dzotw, Fltxbzc, ...).
---     "Brianne", "Kylee H.", "jaimie metz", and "Alyson Valenti" do not match.
+--     16+ letters, OR 5+ letters with no vowel (y counts), OR 8+ letters
+--     with 4 uppercase and 4 lowercase. Names with a space are not matched
+--     by the single-token rules. Lynn, Glynn, Krzysztof, and Nguyễn Văn An
+--     do not match.
 --   all-digit-message
 --     message, comments, location_interest, or program_interest is only digits
 --     (6 or more) once spaces and phone punctuation are removed.
@@ -27,16 +28,18 @@
 --   blocked-domain
 --     Email domain is rootsec.nl (edit the list below to add more).
 --   dotted-email
---     The mailbox local part contains 3 or more dots
---     (a.higitoz.a.j.752@gmail.com). Jmetz4711, briannelynk, acragle1,
---     and kylee.h do not match.
+--     The mailbox local part contains 4 or more dots
+--     (a.higitoz.a.j.752@gmail.com). Three dots, as in
+--     j.r.r.tolkien@example.com, do not match.
 --   gibberish-location
---     location or location_interest is one alphabetic token and looks like
---     the junk cities (no vowels, a 4-consonant run, a rare start such as
---     dz/yn/jl, or an uncommon bigram such as rz).
---     "Brockport, NY", "orleans county", "Victor, NY", Brighton, Greece,
---     Victor, and Kendall do not match. "Yankee Doodle" is a program name,
---     not a gibberish location.
+--     location or location_interest is one alphabetic token with no vowel
+--     (y counts as a vowel), a robot-like start (dz, yn, jl, ...), or a
+--     consonant run of 5 or more when the token is 8 letters or longer.
+--     Churchville, Lyndonville, Clyde, Brockport, Victor, and Kendall do
+--     not match. A run of 4 consonants, and pairs such as rz, are not
+--     treated as junk, so Krzysztof, Strzelecki, Schwarzkopf, and
+--     Tschirhart do not match.
+--     "Yankee Doodle" is a program name, not a gibberish location.
 --   gibberish-program
 --     program_interest is a gibberish token and not a real program.
 --     "Yankee Doodle" and yankee-doodle do not match.
@@ -63,22 +66,18 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN regexp_replace(coalesce(message, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$' THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN message IS NOT NULL AND btrim(message) <> '' AND regexp_replace(coalesce(message, ''), '[[:space:]().+-]', '', 'g') !~ '^[0-9]{6,}$' AND btrim(message) !~ '[[:space:]]' AND (
         (btrim(message) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(message) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(message)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(message) !~* '[aeiouy]'
           OR lower(btrim(message)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(message)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(message)) >= 8
+            AND regexp_replace(lower(btrim(message)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         ))
         OR (
           btrim(message) ~ '[0-9]'
@@ -105,33 +104,31 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN (
         regexp_replace(coalesce(location_interest, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$'
         OR regexp_replace(coalesce(program_interest, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$'
       ) THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN location_interest IS NOT NULL AND btrim(location_interest) ~ '^[A-Za-z]{4,40}$' AND (
-        btrim(location_interest) !~* '[aeiou]'
-        OR regexp_replace(lower(btrim(location_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-        OR lower(btrim(location_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-        OR lower(btrim(location_interest)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+        btrim(location_interest) !~* '[aeiouy]'
+          OR lower(btrim(location_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
+          OR (
+            char_length(btrim(location_interest)) >= 8
+            AND regexp_replace(lower(btrim(location_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
       ) THEN 'gibberish-location' END,
       CASE WHEN program_interest IS NOT NULL
         AND lower(regexp_replace(btrim(program_interest), '[^a-z0-9]+', '-', 'g')) NOT IN ('macaronis', 'yankee-doodle', 'yankee-doodles', 'tycoons', 'seekers', 'pioneers', 'patriots')
         AND btrim(program_interest) ~ '^[A-Za-z]{4,40}$'
         AND (
-          btrim(program_interest) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(program_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(program_interest) !~* '[aeiouy]'
           OR lower(btrim(program_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(program_interest)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(program_interest)) >= 8
+            AND regexp_replace(lower(btrim(program_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         )
       THEN 'gibberish-program' END
     ) AS spam_reason
@@ -153,28 +150,26 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN regexp_replace(coalesce(comments, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$' THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN location IS NOT NULL AND btrim(location) ~ '^[A-Za-z]{4,40}$' AND (
-        btrim(location) !~* '[aeiou]'
-        OR regexp_replace(lower(btrim(location)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-        OR lower(btrim(location)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-        OR lower(btrim(location)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+        btrim(location) !~* '[aeiouy]'
+          OR lower(btrim(location)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
+          OR (
+            char_length(btrim(location)) >= 8
+            AND regexp_replace(lower(btrim(location)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
       ) THEN 'gibberish-location' END,
       CASE WHEN comments IS NOT NULL AND btrim(comments) <> '' AND regexp_replace(coalesce(comments, ''), '[[:space:]().+-]', '', 'g') !~ '^[0-9]{6,}$' AND btrim(comments) !~ '[[:space:]]' AND (
         (btrim(comments) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(comments) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(comments)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(comments) !~* '[aeiouy]'
           OR lower(btrim(comments)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(comments)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(comments)) >= 8
+            AND regexp_replace(lower(btrim(comments)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         ))
         OR (
           btrim(comments) ~ '[0-9]'
@@ -240,22 +235,18 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN regexp_replace(coalesce(message, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$' THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN message IS NOT NULL AND btrim(message) <> '' AND regexp_replace(coalesce(message, ''), '[[:space:]().+-]', '', 'g') !~ '^[0-9]{6,}$' AND btrim(message) !~ '[[:space:]]' AND (
         (btrim(message) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(message) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(message)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(message) !~* '[aeiouy]'
           OR lower(btrim(message)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(message)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(message)) >= 8
+            AND regexp_replace(lower(btrim(message)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         ))
         OR (
           btrim(message) ~ '[0-9]'
@@ -282,33 +273,31 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN (
         regexp_replace(coalesce(location_interest, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$'
         OR regexp_replace(coalesce(program_interest, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$'
       ) THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN location_interest IS NOT NULL AND btrim(location_interest) ~ '^[A-Za-z]{4,40}$' AND (
-        btrim(location_interest) !~* '[aeiou]'
-        OR regexp_replace(lower(btrim(location_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-        OR lower(btrim(location_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-        OR lower(btrim(location_interest)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+        btrim(location_interest) !~* '[aeiouy]'
+          OR lower(btrim(location_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
+          OR (
+            char_length(btrim(location_interest)) >= 8
+            AND regexp_replace(lower(btrim(location_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
       ) THEN 'gibberish-location' END,
       CASE WHEN program_interest IS NOT NULL
         AND lower(regexp_replace(btrim(program_interest), '[^a-z0-9]+', '-', 'g')) NOT IN ('macaronis', 'yankee-doodle', 'yankee-doodles', 'tycoons', 'seekers', 'pioneers', 'patriots')
         AND btrim(program_interest) ~ '^[A-Za-z]{4,40}$'
         AND (
-          btrim(program_interest) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(program_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(program_interest) !~* '[aeiouy]'
           OR lower(btrim(program_interest)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(program_interest)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(program_interest)) >= 8
+            AND regexp_replace(lower(btrim(program_interest)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         )
       THEN 'gibberish-program' END
     ) AS spam_reason
@@ -330,28 +319,26 @@ WITH flagged AS (
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 16)
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 5 AND regexp_replace(btrim(name), '[^A-Za-z]', '', 'g') !~* '[aeiouy]')
         OR (btrim(name) !~ '[[:space:]]' AND char_length(regexp_replace(btrim(name), '[^A-Za-z]', '', 'g')) >= 8 AND length(regexp_replace(btrim(name), '[^A-Z]', '', 'g')) >= 4 AND length(regexp_replace(btrim(name), '[^a-z]', '', 'g')) >= 4)
-        OR (btrim(name) !~ '[[:space:]]' AND btrim(name) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(name) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(name)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-          OR lower(btrim(name)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(name)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
-        ))
       ) THEN 'random-name' END,
       CASE WHEN regexp_replace(coalesce(comments, ''), '[[:space:]().+-]', '', 'g') ~ '^[0-9]{6,}$' THEN 'all-digit-message' END,
       CASE WHEN lower(split_part(btrim(email), '@', 2)) IN ('rootsec.nl') THEN 'blocked-domain' END,
-      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 3 THEN 'dotted-email' END,
+      CASE WHEN (length(split_part(email, '@', 1)) - length(replace(split_part(email, '@', 1), '.', ''))) >= 4 THEN 'dotted-email' END,
       CASE WHEN location IS NOT NULL AND btrim(location) ~ '^[A-Za-z]{4,40}$' AND (
-        btrim(location) !~* '[aeiou]'
-        OR regexp_replace(lower(btrim(location)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
-        OR lower(btrim(location)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-        OR lower(btrim(location)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+        btrim(location) !~* '[aeiouy]'
+          OR lower(btrim(location)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
+          OR (
+            char_length(btrim(location)) >= 8
+            AND regexp_replace(lower(btrim(location)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
       ) THEN 'gibberish-location' END,
       CASE WHEN comments IS NOT NULL AND btrim(comments) <> '' AND regexp_replace(coalesce(comments, ''), '[[:space:]().+-]', '', 'g') !~ '^[0-9]{6,}$' AND btrim(comments) !~ '[[:space:]]' AND (
         (btrim(comments) ~ '^[A-Za-z]{4,40}$' AND (
-          btrim(comments) !~* '[aeiou]'
-          OR regexp_replace(lower(btrim(comments)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxyz]{4,}'
+          btrim(comments) !~* '[aeiouy]'
           OR lower(btrim(comments)) ~ '^(dz|yn|mn|tb|db|wq|jl|zv|xr|qx|xz|fq|vb|gb)'
-          OR lower(btrim(comments)) ~ '(rz|zq|qx|xj|jq|vz|gx|vx|wx|xq|jx|zx|qz|fq|wq|tq|gq)'
+          OR (
+            char_length(btrim(comments)) >= 8
+            AND regexp_replace(lower(btrim(comments)), $re$([a-z])\1+$re$, $re$\1$re$, 'g') ~ '[bcdfghjklmnpqrstvwxz]{5,}'
+          )
         ))
         OR (
           btrim(comments) ~ '[0-9]'
