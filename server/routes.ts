@@ -6,6 +6,7 @@ import sgMail from "@sendgrid/mail";
 import { storage } from "./storage";
 import { insertLocationSuggestionSchema, insertNewsletterSchema, insertProgramInfoRequestSchema, insertContactInquirySchema, insertBlogPostSchema, updateBlogPostSchema, insertPageViewSchema, insertAnnouncementSchema, insertRegistrationWaitlistSchema, type Announcement } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
+import { createFormRateLimiter, logTurnstileConfig, rejectIfFormBlocked, turnstileKeysConfigured } from "./formProtection";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -600,7 +601,58 @@ async function triggerGoogleBusinessPost(announcement: Announcement): Promise<{ 
   }
 }
 
+function includeSpamQuery(req: Request): boolean {
+  const value = req.query.includeSpam;
+  return value === "1" || value === "true";
+}
+
+function spamPartition<T extends { isSpam: boolean }>(rows: T[], includeSpam: boolean): { rows: T[]; hiddenSpamCount: number } {
+  const hiddenSpamCount = rows.filter((row) => row.isSpam).length;
+  return {
+    rows: includeSpam ? rows : rows.filter((row) => !row.isSpam),
+    hiddenSpamCount,
+  };
+}
+
+function csvCell(value: string | number | null | undefined): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function csvDate(value: Date | string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  return csvCell(date.toLocaleString());
+}
+
+async function setSpamFlag(
+  req: Request,
+  res: Response,
+  update: (id: number, isSpam: boolean, spamReason: string | null) => Promise<unknown>,
+): Promise<void> {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ success: false, message: "Invalid id" });
+      return;
+    }
+    const body = z.object({ isSpam: z.boolean() }).parse(req.body);
+    const updated = await update(id, body.isSpam, body.isSpam ? "Marked by an admin" : null);
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Not found" });
+      return;
+    }
+    res.json({ success: true, record: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: fromZodError(error).message });
+      return;
+    }
+    res.status(500).json({ success: false, message: "Failed to update spam flag" });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  const formRateLimiter = createFormRateLimiter();
+  logTurnstileConfig();
   // External redirects
   app.get("/login", (_req: Request, res: Response) => {
     res.redirect(301, "https://accounts.americanseekersacademy.com/login");
@@ -673,10 +725,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  app.get("/api/form-protection", (_req: Request, res: Response) => {
+    res.json({
+      turnstileSiteKey: turnstileKeysConfigured() ? process.env.TURNSTILE_SITE_KEY : null,
+    });
+  });
+
   // API routes for location suggestions
   app.post("/api/location-suggestions", async (req: Request, res: Response) => {
     try {
-      const validatedData = insertLocationSuggestionSchema.parse(req.body);
+      const gated = await rejectIfFormBlocked(req, res, "location", formRateLimiter);
+      if (!gated || gated.kind !== "location") return;
+      const validatedData = insertLocationSuggestionSchema.parse(gated.data);
       const suggestion = await storage.createLocationSuggestion(validatedData);
       
       // Send email notification via SendGrid (don't block on this)
@@ -701,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/location-suggestions", async (req: Request, res: Response) => {
     try {
-      const suggestions = await storage.getLocationSuggestions();
+      const suggestions = (await storage.getLocationSuggestions()).filter((item) => !item.isSpam);
       res.status(200).json({ success: true, suggestions });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to retrieve location suggestions" });
@@ -789,7 +849,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API route for contact inquiries (SendGrid notification + optional HubSpot CRM upsert)
   app.post("/api/contact-inquiry", async (req: Request, res: Response) => {
     try {
-      const validatedData = insertContactInquirySchema.parse(req.body);
+      const gated = await rejectIfFormBlocked(req, res, "contact", formRateLimiter);
+      if (!gated || gated.kind !== "contact") return;
+      const validatedData = insertContactInquirySchema.parse(gated.data);
       
       // Save to database
       const inquiry = await storage.createContactInquiry(validatedData);
@@ -1112,22 +1174,32 @@ ${urls
   });
 
   // Admin data endpoints (protected)
-  app.get("/api/admin/contacts", requireAdmin as any, async (_req: Request, res: Response) => {
+  app.get("/api/admin/contacts", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const inquiries = await storage.getContactInquiries();
-      res.json({ success: true, inquiries });
+      const view = spamPartition(inquiries, includeSpamQuery(req));
+      res.json({ success: true, inquiries: view.rows, hiddenSpamCount: view.hiddenSpamCount });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to retrieve contact inquiries" });
     }
   });
 
-  app.get("/api/admin/locations", requireAdmin as any, async (_req: Request, res: Response) => {
+  app.patch("/api/admin/contacts/:id/spam", requireAdmin as any, async (req: Request, res: Response) => {
+    await setSpamFlag(req, res, (id, isSpam, reason) => storage.setContactInquirySpam(id, isSpam, reason));
+  });
+
+  app.get("/api/admin/locations", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const suggestions = await storage.getLocationSuggestions();
-      res.json({ success: true, suggestions });
+      const view = spamPartition(suggestions, includeSpamQuery(req));
+      res.json({ success: true, suggestions: view.rows, hiddenSpamCount: view.hiddenSpamCount });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to retrieve location suggestions" });
     }
+  });
+
+  app.patch("/api/admin/locations/:id/spam", requireAdmin as any, async (req: Request, res: Response) => {
+    await setSpamFlag(req, res, (id, isSpam, reason) => storage.setLocationSuggestionSpam(id, isSpam, reason));
   });
 
   app.get("/api/admin/programs", requireAdmin as any, async (_req: Request, res: Response) => {
@@ -1387,8 +1459,8 @@ ${urls
       res.json({
         success: true,
         stats: {
-          totalContacts: contacts.length,
-          totalLocations: locations.length,
+          totalContacts: contacts.filter((item) => !item.isSpam).length,
+          totalLocations: locations.filter((item) => !item.isSpam).length,
           totalPrograms: programs.length,
           totalNewsletters: newsletters.length,
           totalPageViews: pageViews.length
@@ -1750,7 +1822,9 @@ ${urls
   // Registration waitlist routes
   app.post("/api/registration-waitlist", async (req: Request, res: Response) => {
     try {
-      const validatedData = insertRegistrationWaitlistSchema.parse(req.body);
+      const gated = await rejectIfFormBlocked(req, res, "waitlist", formRateLimiter);
+      if (!gated || gated.kind !== "waitlist") return;
+      const validatedData = insertRegistrationWaitlistSchema.parse(gated.data);
       const entry = await storage.createRegistrationWaitlistEntry(validatedData);
 
       // Send confirmation email (non-blocking, now uses safe helper with retry)
@@ -1776,24 +1850,31 @@ ${urls
   app.get("/api/admin/registration-waitlist", requireAdmin as any, async (req: Request, res: Response) => {
     try {
       const entries = await storage.getRegistrationWaitlistEntries();
-      res.json({ success: true, entries });
+      const view = spamPartition(entries, includeSpamQuery(req));
+      res.json({ success: true, entries: view.rows, hiddenSpamCount: view.hiddenSpamCount });
     } catch {
       res.status(500).json({ success: false, message: "Failed to retrieve waitlist" });
     }
   });
 
-  app.get("/api/admin/contacts/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+  app.patch("/api/admin/registration-waitlist/:id/spam", requireAdmin as any, async (req: Request, res: Response) => {
+    await setSpamFlag(req, res, (id, isSpam, reason) => storage.setRegistrationWaitlistSpam(id, isSpam, reason));
+  });
+
+  app.get("/api/admin/contacts/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
     try {
-      const items = await storage.getContactInquiries();
-      const header = "ID,Name,Email,Phone,No Phone Contact,Message,Date\n";
+      const items = spamPartition(await storage.getContactInquiries(), includeSpamQuery(req)).rows;
+      const header = "ID,Name,Email,Phone,No Phone Contact,Message,Date,Is Spam,Spam Reason\n";
       const rows = items.map(e => [
         e.id,
-        `"${(e.name || "").replace(/"/g, '""')}"`,
-        `"${(e.email || "").replace(/"/g, '""')}"`,
-        `"${(e.phone || "").replace(/"/g, '""')}"`,
+        csvCell(e.name),
+        csvCell(e.email),
+        csvCell(e.phone),
         e.phoneOptOut ? "Yes" : "No",
-        `"${(e.message || "").replace(/"/g, '""')}"`,
-        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
+        csvCell(e.message),
+        csvDate(e.createdAt),
+        e.isSpam ? "Yes" : "No",
+        csvCell(e.spamReason),
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"contacts.csv\"");
@@ -1801,17 +1882,19 @@ ${urls
     } catch { res.status(500).json({ success: false, message: "Failed to export contacts" }); }
   });
 
-  app.get("/api/admin/locations/export.csv", requireAdmin as any, async (_req: Request, res: Response) => {
+  app.get("/api/admin/locations/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
     try {
-      const items = await storage.getLocationSuggestions();
-      const header = "ID,Name,Email,Suggested Location,Comments,Date\n";
+      const items = spamPartition(await storage.getLocationSuggestions(), includeSpamQuery(req)).rows;
+      const header = "ID,Name,Email,Suggested Location,Comments,Date,Is Spam,Spam Reason\n";
       const rows = items.map(e => [
         e.id,
-        `"${(e.name || "").replace(/"/g, '""')}"`,
-        `"${(e.email || "").replace(/"/g, '""')}"`,
-        `"${(e.location || "").replace(/"/g, '""')}"`,
-        `"${(e.comments || "").replace(/"/g, '""')}"`,
-        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
+        csvCell(e.name),
+        csvCell(e.email),
+        csvCell(e.location),
+        csvCell(e.comments),
+        csvDate(e.createdAt),
+        e.isSpam ? "Yes" : "No",
+        csvCell(e.spamReason),
       ].join(",")).join("\n");
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=\"location-suggestions.csv\"");
@@ -1854,17 +1937,19 @@ ${urls
 
   app.get("/api/admin/registration-waitlist/export.csv", requireAdmin as any, async (req: Request, res: Response) => {
     try {
-      const entries = await storage.getRegistrationWaitlistEntries();
-      const header = "ID,Name,Email,Phone,Program Interest,Location Interest,Signed Up At\n";
+      const entries = spamPartition(await storage.getRegistrationWaitlistEntries(), includeSpamQuery(req)).rows;
+      const header = "ID,Name,Email,Phone,Program Interest,Location Interest,Signed Up At,Is Spam,Spam Reason\n";
       const rows = entries.map(e =>
         [
           e.id,
-          `"${(e.name || "").replace(/"/g, '""')}"`,
-          `"${(e.email || "").replace(/"/g, '""')}"`,
-          `"${(e.phone || "").replace(/"/g, '""')}"`,
-          `"${(e.programInterest || "").replace(/"/g, '""')}"`,
-          `"${(e.locationInterest || "").replace(/"/g, '""')}"`,
-          `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
+          csvCell(e.name),
+          csvCell(e.email),
+          csvCell(e.phone),
+          csvCell(e.programInterest),
+          csvCell(e.locationInterest),
+          csvDate(e.createdAt),
+          e.isSpam ? "Yes" : "No",
+          csvCell(e.spamReason),
         ].join(",")
       ).join("\n");
       res.setHeader("Content-Type", "text/csv");
@@ -1892,16 +1977,16 @@ ${urls
     }
 
     try {
-      const items = await storage.getContactInquiries();
+      const items = (await storage.getContactInquiries()).filter((item) => !item.isSpam);
       const header = "ID,Name,Email,Phone,No Phone Contact,Message,Date\n";
       const rows = items.map(e => [
         e.id,
-        `"${(e.name || "").replace(/"/g, '""')}"`,
-        `"${(e.email || "").replace(/"/g, '""')}"`,
-        `"${(e.phone || "").replace(/"/g, '""')}"`,
+        csvCell(e.name),
+        csvCell(e.email),
+        csvCell(e.phone),
         e.phoneOptOut ? "Yes" : "No",
-        `"${(e.message || "").replace(/"/g, '""')}"`,
-        `"${(e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toLocaleString()}"`,
+        csvCell(e.message),
+        csvDate(e.createdAt),
       ].join(",")).join("\n");
 
       res.setHeader("Content-Type", "text/csv");

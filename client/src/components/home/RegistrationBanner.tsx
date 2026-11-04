@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import FormSpamFields, { useFormSpamFields } from "@/components/common/FormSpamFields";
 
 const waitlistSchema = z.object({
   name: z.string().min(2, "Please enter your name"),
@@ -31,6 +32,7 @@ const PROGRAMS = [
 export default function RegistrationBanner() {
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
+  const spam = useFormSpamFields();
 
   const form = useForm<WaitlistForm>({
     resolver: zodResolver(waitlistSchema),
@@ -39,7 +41,7 @@ export default function RegistrationBanner() {
 
   const onSubmit = async (data: WaitlistForm) => {
     try {
-      await apiRequest("POST", "/api/registration-waitlist", data);
+      await apiRequest("POST", "/api/registration-waitlist", { ...data, ...spam.payload() });
       setSubmitted(true);
     } catch {
       toast({ title: "Something went wrong. Please try again.", variant: "destructive" });
@@ -89,7 +91,14 @@ export default function RegistrationBanner() {
                 <h3 className="font-serif text-2xl font-bold text-[#1e3a5f] mb-1">Join the Waitlist</h3>
                 <p className="text-gray-500 text-sm mb-6">Be first in line for Fall 2026 enrollment</p>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="relative space-y-4">
+                    <FormSpamFields
+                      key={spam.widgetKey}
+                      honeypot={spam.honeypot}
+                      onHoneypot={spam.setHoneypot}
+                      siteKey={spam.siteKey}
+                      onToken={spam.setTurnstileToken}
+                    />
                     <FormField
                       control={form.control}
                       name="name"
@@ -153,7 +162,7 @@ export default function RegistrationBanner() {
                     />
                     <Button
                       type="submit"
-                      disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || spam.pendingToken}
                       className="w-full bg-[#c4a052] hover:bg-[#b3903f] text-white font-bold py-3 text-base"
                     >
                       {form.formState.isSubmitting ? "Submitting..." : (
