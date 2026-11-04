@@ -73,13 +73,13 @@ const realRows: StoredSpamRow[] = [
 const spamRows: StoredSpamRow[] = [
   {
     name: "OWIJkOAtgUrflGAqJTnvGxl",
-    email: "a.higitoz.a.j.752@gmail.com",
+    email: "a.fakebot.a.j.752@example.com",
     location: "Dzotw",
     comments: "6654270955",
   },
   {
     name: "syzjxlxrNqblLxHWXTIH",
-    email: "shane.glb.s.on.42@gmail.com",
+    email: "shane.fake.s.on.42@example.com",
     location: "Fltxbzc",
     comments: "4129780010",
   },
@@ -326,7 +326,7 @@ test("server validation rejects the bot patterns", () => {
     now: NOW,
     body: readyBody({
       name: "Pat Example",
-      email: "a.higitoz.a.j.752@gmail.com",
+      email: "a.fakebot.a.j.752@example.com",
       locationInterest: "brighton",
     }),
   });

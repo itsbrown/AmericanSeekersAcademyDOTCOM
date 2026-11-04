@@ -95,7 +95,7 @@ export function localPartDotCount(email: string): number {
 
 /**
  * Bot mailbox names from the Aug 2026 wave use 4 or more dots
- * (a.higitoz.a.j.752@gmail.com). Three dots, as in j.r.r.tolkien@example.com, stay allowed.
+ * (a.fakebot.a.j.752@example.com). Three dots, as in j.r.r.tolkien@example.com, stay allowed.
  */
 export function isDottedSpamEmail(email: string): boolean {
   return localPartDotCount(email) >= 4;

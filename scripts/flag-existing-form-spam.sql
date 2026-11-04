@@ -29,7 +29,7 @@
 --     Email domain is rootsec.nl (edit the list below to add more).
 --   dotted-email
 --     The mailbox local part contains 4 or more dots
---     (a.higitoz.a.j.752@gmail.com). Three dots, as in
+--     (a.fakebot.a.j.752@example.com). Three dots, as in
 --     j.r.r.tolkien@example.com, do not match.
 --   gibberish-location
 --     location or location_interest is one alphabetic token with no vowel
